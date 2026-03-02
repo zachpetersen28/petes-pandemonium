@@ -1,0 +1,79 @@
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
+}
+/* Step 11: non-admin view-only lock */
+.viewOnlyLock {
+  pointer-events: none;
+  user-select: none;
+  filter: grayscale(0.15);
+  opacity: 0.96;
+}
+
+.viewOnlyHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.viewOnlyDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #d97706; /* amber */
+}
+@keyframes pp_shake {
+  0% { transform: translateX(0); }
+  12% { transform: translateX(-8px); }
+  25% { transform: translateX(8px); }
+  37% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  62% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+  100% { transform: translateX(0); }
+}
