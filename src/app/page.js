@@ -858,7 +858,14 @@ const [playerViewSelected, setPlayerViewSelected] = useState("");
   const [seedMsg, setSeedMsg] = useState("");
   const [templateDay, setTemplateDay] = useState("ALL");
   const [exportMsg, setExportMsg] = useState("");
+const [isDesktop, setIsDesktop] = useState(false);
 
+useEffect(() => {
+  const check = () => setIsDesktop(window.innerWidth >= 900);
+  check();
+  window.addEventListener("resize", check);
+  return () => window.removeEventListener("resize", check);
+}, []);
   const [seedTeamsByRegion, setSeedTeamsByRegion] = useState({
     East: {},
     West: {},
@@ -2886,7 +2893,7 @@ const sharedStatus = (() => {
     <div style={styles.sectionTitle}>Side Bets</div>
     <div style={styles.sectionSub}>Click a tile to expand.</div>
 
-    <div style={styles.twoCol}>
+    <div style={isDesktop ? styles.twoColDesktop : styles.twoCol}>
       <div style={{ display: "grid", gap: 12 }}>
         {sideBetComputed.results.map((bet) => {
           // ✅ IMPORTANT: This keeps your existing bet → games logic (no scoring/config changes)
@@ -3290,7 +3297,7 @@ const statusPill =
             <div style={styles.sectionTitle}>Leaderboards</div>
             
 
-            <div style={styles.twoCol}>
+            <div style={isDesktop ? styles.twoColDesktop : styles.twoCol}>
               <div>
 <Card title="Leaderboard" subtitle="ESPN Points" rightHeader={<Pill tone="green">LIVE</Pill>}>
   <div style={styles.moneyboardWrap}>
@@ -4526,7 +4533,17 @@ pillYellow: {
     textAlign: "center",
   },
 
-  twoCol: { display: "grid", gridTemplateColumns: "1.65fr 1fr", gap: 14, alignItems: "start", marginTop: 16 },
+twoCol: {
+  display: "grid",
+  gap: 16,
+  gridTemplateColumns: "1fr",
+},
+
+twoColDesktop: {
+  display: "grid",
+  gap: 16,
+  gridTemplateColumns: "1fr 360px",
+},
 
   sectionTitle: {
   fontWeight: 950,
