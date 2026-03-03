@@ -2571,7 +2571,11 @@ const sharedStatus = (() => {
             </div>
           </div>
         )}
-
+<div style={{ fontSize: 12, opacity: 0.6, padding: "6px 12px" }}>
+  DEBUG — brackets: {brackets?.length || 0} | total picks:{" "}
+  {(brackets || []).reduce((sum, b) => sum + Object.keys(b?.picks || {}).length, 0)} | games:{" "}
+  {games?.length || 0} | resolved: {(games || []).filter((g) => g?.winnerName).length}
+</div>
         {/* SIM CONTROLS (HIDDEN FROM NON-ADMINS) */}
         {isAdmin && (
           <div style={{ marginTop: 16 }}>
