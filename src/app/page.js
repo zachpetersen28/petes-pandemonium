@@ -1821,55 +1821,66 @@ if (bet.id === 8) {
 
     if ((bet.id === 4 || bet.id === 5) && isLongestStreakBet) {
       const rows = brackets.map((p) => {
-        let streak = 0;
-        let started = false;
+  let streak = 0;
+  let started = false;
 
-        let startedAtGameId = null;
-        let startedAtOrder = null;
+  let startedAtGameId = null;
+  let startedAtOrder = null;
 
-        let status = "none";
+  let status = "none"; // none | in_progress | ended_wrong | complete
 
-        for (const g of betGames) {
-          const pickRaw = String(p.picks?.[g.id] ?? "").trim();
-          if (!pickRaw || pickRaw === "TBD") continue;
+  for (const g of betGames) {
+    const pickRaw = String(p.picks?.[g.id] ?? "").trim();
+    if (!pickRaw || pickRaw === "TBD") continue; // ✅ skip
 
-          const t1 = g.teams?.[0]?.name;
-          const t2 = g.teams?.[1]?.name;
-          const norm = normalizeNameMatch(pickRaw, [t1, t2].filter(Boolean));
-          if (!norm) continue;
+    const t1 = String(g.teams?.[0]?.name || "").trim();
+    const t2 = String(g.teams?.[1]?.name || "").trim();
+    const candidates = [t1, t2].filter((x) => x && x !== "TBD");
+    if (candidates.length !== 2) continue; // ✅ can't evaluate yet
 
-          if (!started) {
-            started = true;
-            status = "complete";
-            startedAtGameId = g.id;
+    // ✅ If their pick isn't one of the teams in this matchup, skip (doesn't help/hurt)
+    const pickNorm = normalizeNameMatch(pickRaw, candidates);
+    if (!pickNorm) continue; // ✅ skip (this is the key fix)
 
-            const ord = getOrderNum(g.id);
-            startedAtOrder = ord != null ? ord : null;
-          }
+    // ✅ streak "starts" at first valid pick-in-matchup (even if winner not decided yet)
+    if (!started) {
+      started = true;
+      status = "complete";
+      startedAtGameId = g.id;
+      const ord = getOrderNum(g.id);
+      startedAtOrder = ord != null ? ord : null;
+    }
 
-          if (!g.winnerName) {
-            status = "in_progress";
-            break;
-          }
+    // If the game isn't resolved yet, streak is in progress and we stop scanning
+    const winnerRaw = String(g.winnerName || "").trim();
+    if (!winnerRaw) {
+      status = "in_progress";
+      break;
+    }
 
-          if (safeLower(norm) === safeLower(g.winnerName)) {
-            streak += 1;
-          } else {
-            status = "ended_wrong";
-            break;
-          }
-        }
+    // ✅ normalize winner the same way (prevents casing/alias mismatch)
+    const winnerNorm = normalizeNameMatch(winnerRaw, candidates) || winnerRaw;
 
-        if (!started) status = "none";
+    if (safeLower(pickNorm) === safeLower(winnerNorm)) {
+      streak += 1;
+      continue;
+    }
 
-        return {
-          name: p.name,
-          streak,
-          status,
-          startedAtGameId,
-          startedAtOrder,
-        };
-      });
+    // ✅ Wrong pick (for an actual matchup they picked) ends the streak
+    status = "ended_wrong";
+    break;
+  }
+
+  if (!started) status = "none";
+
+  return {
+    name: p.name,
+    streak,
+    status,
+    startedAtGameId,
+    startedAtOrder,
+  };
+});
 
       const maxStreak = rows.length ? Math.max(...rows.map((r) => r.streak)) : 0;
       const winners = maxStreak > 0 ? rows.filter((r) => r.streak === maxStreak).map((r) => r.name) : [];
@@ -2571,11 +2582,7 @@ const sharedStatus = (() => {
             </div>
           </div>
         )}
-<div style={{ fontSize: 12, opacity: 0.6, padding: "6px 12px" }}>
-  DEBUG — brackets: {brackets?.length || 0} | total picks:{" "}
-  {(brackets || []).reduce((sum, b) => sum + Object.keys(b?.picks || {}).length, 0)} | games:{" "}
-  {games?.length || 0} | resolved: {(games || []).filter((g) => g?.winnerName).length}
-</div>
+
         {/* SIM CONTROLS (HIDDEN FROM NON-ADMINS) */}
         {isAdmin && (
           <div style={{ marginTop: 16 }}>
@@ -2922,7 +2929,7 @@ if (bet.id === 8) {
 
             return games
               .filter((g) => {
-                if (hasDay && effectiveDayForGame(g) === dayNum) return true;
+                if (hasDay && Number(g.day) === dayNum) return true;
                 if (hasRound && g.round === bet.round) return true;
                 return false;
               })
