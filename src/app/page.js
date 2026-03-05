@@ -1397,14 +1397,23 @@ const betGames = (() => {
   }
 
   // 2) Otherwise use day/round rules (your existing behavior)
-  return games
-    .filter((g) => {
-      const dayMatch = Number.isFinite(betDay) && effectiveDayForGame(g) === betDay;
-      const roundMatch = Boolean(bet.round) && g.round === bet.round;
-      return dayMatch || roundMatch;
-    })
-    .slice()
-    .sort(compareByOrderThenId);
+return games
+  .filter((g) => {
+    const hasDay = Number.isFinite(betDay);
+    const hasRound = Boolean(bet.round);
+
+    const dayMatch = hasDay && effectiveDayForGame(g) === betDay;
+    const roundMatch = hasRound && g.round === bet.round;
+
+    // ✅ If BOTH are provided, require BOTH
+    if (hasDay && hasRound) return dayMatch && roundMatch;
+
+    if (hasDay) return dayMatch;
+    if (hasRound) return roundMatch;
+    return false;
+  })
+  .slice()
+  .sort(compareByOrderThenId);
 })();
 // =========================
 // BET #7 — FINAL FOUR UNIQUENESS (2 semifinal games only)
