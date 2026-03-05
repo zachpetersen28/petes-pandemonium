@@ -60,26 +60,53 @@ const ROUND_ORDER = {
 const ROUND_LIST = ["Round 1", "Round 2", "Sweet Sixteen", "Elite 8", "Final Four", "Final"];
 
 /* =========================
-   SIDE BETS
+   SIDE BETS (6 TOTAL — 1 PER ROUND)
 ========================= */
 const SIDE_BETS = [
-  { id: 1, title: "Round 1 (Day 1) – Most Upsets Correctly Picked", day: 1, prize: 50, desc: "Any lower seed that beats a higher seed is an upset." },
-  { id: 2, title: "Round 1 (Day 2) – Most Wins Correctly Picked", day: 2, prize: 50, desc: "Most wins for the day." },
-  { id: 3, title: "Round 2 (Day 1) – Win + Upset Points", round: "Round 2", day: 3, prize: 25, desc: "Win = 1 Point, Upset = 2 Points - Most points win." },
-  { id: 4, title: "Round 2 (Day 2) – Longest Win Streak", day: 4, prize: 30, desc: "Your streak begins when the first team you picked to win plays. If there is a game where you have neither team, it does not count against your streak. Some may have potential for a longer streak if they have more teams alive." },
-  { id: 5, title: "Sweet Sixteen – Longest Win Streak", round: "Sweet Sixteen", prize: 50, desc: "Your streak begins when the first team you picked to win plays. If there is a game where you have neither team, it does not count against your streak. Some may have potential for a longer streak if they have more teams alive." },
-  { id: 6, title: "Elite Eight – Closest Combined Seed Total (Final Four seeds)", round: "Elite 8", prize: 50, desc: "Closest predicted final four seed sum wins. Even if all of your team are eliminated, the seed sum goes off of your original predictions." },
- {
-  id: 7,
-  title: "Final Four – Championship Teams Picked",
-  prize: 100,
+  {
+    id: 1,
+    title: "Round 1 – Most Upsets Correctly Picked",
+    round: "Round 1",
+    prize: 100,
+    desc: "Any lower seed that beats a higher seed is an upset. Most correctly picked upsets wins.",
+  },
+  {
+    id: 2,
+    title: "Round 2 – Most Wins Correctly Picked",
+    round: "Round 2",
+    prize: 50,
+    desc: "Most correct picks in Round 2 (wins only).",
+  },
+  {
+    id: 3,
+    title: "Sweet Sixteen – Win + Upset Points",
+    round: "Sweet Sixteen",
+    prize: 25,
+    desc: "Win = 1 point. Upset = 2 points. Most points wins.",
+  },
 
-  // 👇 THIS is the important addition
-  gameIds: [61, 62],
-
-  desc: "Each correctly picked championship teams = +1 point. Bonus: +3 if only you picked the team, +2 if 2-3 people picked the team, +1 if 4-6 people picked the team, +0 if 7+ people picked the team If no one correctly picks either team it is a tie among all."
-},
-  { id: 8, title: "Final – Most Wins Overall", round: "Final", prize: 150, desc: "Most wins throughout the entire tournament, not points." },
+  // ✅ last 3 unchanged (as you requested)
+  {
+    id: 6,
+    title: "Elite Eight – Closest Combined Seed Total (Final Four seeds)",
+    round: "Elite 8",
+    prize: 50,
+    desc: "Closest predicted final four seed sum wins. Even if all of your team are eliminated, the seed sum goes off of your original predictions.",
+  },
+  {
+    id: 7,
+    title: "Final Four – Championship Teams Picked",
+    prize: 100,
+    gameIds: [61, 62],
+    desc: "Each correctly picked championship team = +1 point. Bonus: +3 if only you picked the team, +2 if 2–3 people picked the team, +1 if 4–6 people picked the team, +0 if 7+ people picked the team. If no one correctly picks either team it is a tie among all.",
+  },
+  {
+    id: 8,
+    title: "Final – Most Wins Overall",
+    round: "Final",
+    prize: 150,
+    desc: "Most wins throughout the entire tournament, not points.",
+  },
 ];
 
 /* =========================
@@ -1384,7 +1411,6 @@ useEffect(() => {
   };
 
   const results = SIDE_BETS.map((bet) => {
-    const betDay = bet.day != null ? Number(bet.day) : null;
 
 const betGames = (() => {
   // 1) If bet explicitly lists gameIds, use those (most reliable)
@@ -1396,24 +1422,15 @@ const betGames = (() => {
       .sort(compareByOrderThenId);
   }
 
-  // 2) Otherwise use day/round rules (your existing behavior)
-return games
-  .filter((g) => {
-    const hasDay = Number.isFinite(betDay);
-    const hasRound = Boolean(bet.round);
+  // 2) Otherwise: round-only (since we're removing day-based side bets)
+  if (bet.round) {
+    return games
+      .filter((g) => String(g.round) === String(bet.round))
+      .slice()
+      .sort(compareByOrderThenId);
+  }
 
-    const dayMatch = hasDay && effectiveDayForGame(g) === betDay;
-    const roundMatch = hasRound && g.round === bet.round;
-
-    // ✅ If BOTH are provided, require BOTH
-    if (hasDay && hasRound) return dayMatch && roundMatch;
-
-    if (hasDay) return dayMatch;
-    if (hasRound) return roundMatch;
-    return false;
-  })
-  .slice()
-  .sort(compareByOrderThenId);
+  return [];
 })();
 // =========================
 // BET #7 — FINAL FOUR UNIQUENESS (2 semifinal games only)
@@ -2917,34 +2934,26 @@ const sharedStatus = (() => {
       <div style={{ display: "grid", gap: 12 }}>
         {sideBetComputed.results.map((bet) => {
           // ✅ IMPORTANT: This keeps your existing bet → games logic (no scoring/config changes)
-          const betGames = (() => {
-            // ✅ BET #8 should include ALL games (most wins overall)
-if (bet.id === 8) {
-  return games.slice().sort(compareByOrderThenId);
-}
-            // 1) If the bet explicitly lists gameIds, use that (most reliable)
-            if (Array.isArray(bet.gameIds) && bet.gameIds.length) {
-              const idSet = new Set(bet.gameIds.map((x) => Number(x)).filter(Number.isFinite));
-              return games
-                .filter((g) => idSet.has(Number(g.id)))
-                .slice()
-                .sort(compareByOrderThenId);
-            }
+const betGames = (() => {
+  // 1) If the bet explicitly lists gameIds, use that (most reliable)
+  if (Array.isArray(bet.gameIds) && bet.gameIds.length) {
+    const idSet = new Set(bet.gameIds.map((x) => Number(x)).filter(Number.isFinite));
+    return games
+      .filter((g) => idSet.has(Number(g.id)))
+      .slice()
+      .sort(compareByOrderThenId);
+  }
 
-            // 2) Otherwise use day/round rules
-            const dayNum = bet.day != null ? Number(bet.day) : null;
-            const hasDay = Number.isFinite(dayNum);
-            const hasRound = Boolean(bet.round);
+  // 2) Otherwise, use round only (since we're removing day-based side bets)
+  if (bet.round) {
+    return games
+      .filter((g) => String(g.round) === String(bet.round))
+      .slice()
+      .sort(compareByOrderThenId);
+  }
 
-            return games
-              .filter((g) => {
-                if (hasDay && Number(g.day) === dayNum) return true;
-                if (hasRound && g.round === bet.round) return true;
-                return false;
-              })
-              .slice()
-              .sort(compareByOrderThenId);
-          })();
+  return [];
+})();
 
           const open = expandedBet === bet.id;
 
