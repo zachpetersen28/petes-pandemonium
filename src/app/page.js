@@ -1550,15 +1550,15 @@ if (bet.id === 7) {
   winners.forEach((w) => (money[w] += split));
 
   // ✅ Premium standings (uses your existing helper)
-  const { standings, metricLabel } = packStandings({
-    rows: scores.map((s) => ({
-      name: s.name,
-      primary: s.points,
-    secondary: s.points > 0 ? `${s.correctTeams}/2 correct • +${s.bonusTotal} bonus` : ""
-    })),
-    sortFn: (a, b) => Number(b.primary) - Number(a.primary) || a.name.localeCompare(b.name),
-    metricLabel: "Points",
-  });
+const { standings, metricLabel } = packStandings({
+  rows: scores.map((s) => ({
+    name: s.name,
+    primary: s.points,
+    secondary: s.parts?.length ? s.parts.join(" • ") : "",
+  })),
+  sortFn: (a, b) => Number(b.primary) - Number(a.primary) || a.name.localeCompare(b.name),
+  metricLabel: "Points",
+});
 
   const hitLabel =
     semifinalGames.length < 2
