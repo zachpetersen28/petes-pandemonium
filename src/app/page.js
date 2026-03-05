@@ -1410,28 +1410,32 @@ useEffect(() => {
     };
   };
 
-  const results = SIDE_BETS.map((bet) => {
+ const results = SIDE_BETS.map((bet) => {
+  const betGames = (() => {
+    // 1) Explicit gameIds always wins
+    if (Array.isArray(bet.gameIds) && bet.gameIds.length) {
+      const idSet = new Set(bet.gameIds.map((x) => Number(x)).filter(Number.isFinite));
+      return games
+        .filter((g) => idSet.has(Number(g.id)))
+        .slice()
+        .sort(compareByOrderThenId);
+    }
 
-const betGames = (() => {
-  // 1) If bet explicitly lists gameIds, use those (most reliable)
-  if (Array.isArray(bet.gameIds) && bet.gameIds.length) {
-    const idSet = new Set(bet.gameIds.map((x) => Number(x)).filter(Number.isFinite));
-    return games
-      .filter((g) => idSet.has(Number(g.id)))
-      .slice()
-      .sort(compareByOrderThenId);
-  }
+    // 2) Otherwise: round-based (your new model)
+    if (bet.round) {
+      // Special case: Final bet (#8) is "Most Wins Overall" and should include all games
+      if (bet.id === 8) return games.slice().sort(compareByOrderThenId);
 
-  // 2) Otherwise: round-only (since we're removing day-based side bets)
-  if (bet.round) {
-    return games
-      .filter((g) => String(g.round) === String(bet.round))
-      .slice()
-      .sort(compareByOrderThenId);
-  }
+      return games
+        .filter((g) => String(g.round) === String(bet.round))
+        .slice()
+        .sort(compareByOrderThenId);
+    }
 
-  return [];
-})();
+    return [];
+  })();
+
+  // ... keep the rest of your bet logic below unchanged
 // =========================
 // BET #7 — FINAL FOUR UNIQUENESS (2 semifinal games only)
 // =========================
@@ -2935,12 +2939,10 @@ const sharedStatus = (() => {
         {sideBetComputed.results.map((bet) => {
           // ✅ IMPORTANT: This keeps your existing bet → games logic (no scoring/config changes)
 const betGames = (() => {
-  // ✅ BET #8 should include ALL games (most wins overall)
   if (bet.id === 8) {
     return games.slice().sort(compareByOrderThenId);
   }
 
-  // 1) If bet explicitly lists gameIds, use those (most reliable)
   if (Array.isArray(bet.gameIds) && bet.gameIds.length) {
     const idSet = new Set(bet.gameIds.map((x) => Number(x)).filter(Number.isFinite));
     return games
@@ -2949,23 +2951,14 @@ const betGames = (() => {
       .sort(compareByOrderThenId);
   }
 
-  // 2) Otherwise use day/round rules
-  return games
-    .filter((g) => {
-      const hasDay = Number.isFinite(betDay);
-      const hasRound = Boolean(bet.round);
+  if (bet.round) {
+    return games
+      .filter((g) => String(g.round) === String(bet.round))
+      .slice()
+      .sort(compareByOrderThenId);
+  }
 
-      const dayMatch = hasDay && effectiveDayForGame(g) === betDay;
-      const roundMatch = hasRound && g.round === bet.round;
-
-      // If BOTH are provided, require BOTH
-      if (hasDay && hasRound) return dayMatch && roundMatch;
-      if (hasDay) return dayMatch;
-      if (hasRound) return roundMatch;
-      return false;
-    })
-    .slice()
-    .sort(compareByOrderThenId);
+  return [];
 })();
 
           const open = expandedBet === bet.id;
