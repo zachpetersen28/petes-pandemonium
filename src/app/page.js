@@ -1672,130 +1672,6 @@ const hitLabel =
       return { ...bet, winners, split, hitLabel, actualSum, standings, metricLabel };
     }
 // =========================
-// BET #7 — FINAL FOUR UNIQUENESS (2 semifinal games only)
-// +1 for each correct semifinal winner
-// Bonus by # of correct pickers for that winner:
-// 1 => +3, 2–3 => +2, 4–6 => +1, 7+ => +0
-// If nobody gets either winner (both games), full tie.
-// =========================
-if (bet.id === 7) {
-  // We expect betGames to already be [61,62] from bet.gameIds
-  const semifinalGames = betGames.slice(0, 2);
-
-  // Helper: did this bracket pick the winner of game g?
-  const didPickWinner = (bracket, g) => {
-    const winner = String(g?.winnerName || "").trim();
-    if (!winner) return false;
-
-    const t1 = String(g?.teams?.[0]?.name || "").trim();
-    const t2 = String(g?.teams?.[1]?.name || "").trim();
-    const candidates = [t1, t2].filter((x) => x && x !== "TBD");
-
-    const winnerNorm = candidates.length ? normalizeNameMatch(winner, candidates) : winner;
-
-    const pickRaw = String(bracket?.picks?.[g.id] ?? "").trim();
-    if (!pickRaw || pickRaw === "TBD") return false;
-
-    const pickNorm = candidates.length ? normalizeNameMatch(pickRaw, candidates) : pickRaw;
-    if (!pickNorm) return false;
-
-    return safeLower(pickNorm) === safeLower(winnerNorm);
-  };
-
-  // Count correct pickers per semifinal winner
-  const correctCountsByGameId = {};
-  for (const g of semifinalGames) {
-    if (!g?.winnerName) continue;
-    let count = 0;
-    for (const b of brackets) {
-      if (didPickWinner(b, g)) count += 1;
-    }
-    correctCountsByGameId[g.id] = count;
-  }
-
-  // Bonus tier
-  const bonusForCorrectCount = (n) => {
-    if (n === 1) return 3;
-    if (n === 2 || n === 3) return 2;
-    if (n >= 4 && n <= 6) return 1;
-    return 0; // 7+
-  };
-
-  // Build per-player scores
-const scores = brackets.map((b) => {
-  let points = 0;
-  let correctTeams = 0;
-  let bonusTotal = 0;
-
-  for (const g of semifinalGames) {
-    if (!g?.winnerName) continue;
-
-    const correctCount = Number(correctCountsByGameId[g.id] ?? 0);
-    if (correctCount === 0) continue;
-
-    const correct = didPickWinner(b, g);
-    if (!correct) continue;
-
-    const base = 1;
-    const bonus = bonusForCorrectCount(correctCount);
-
-    points += base + bonus;
-    correctTeams += 1;
-    bonusTotal += bonus;
-  }
-
-  return { name: b.name, points, correctTeams, bonusTotal };
-});
-
-  // Premium standings (clean)
-  const { standings, metricLabel } = packStandings({
-    rows: scores.map((s) => ({
-      name: s.name,
-      primary: s.points,
-      secondary:
-        semifinalGames.length === 2
-          ? `${s.correctTeams}/2 correct • +${s.bonusTotal} bonus`
-          : `+${s.bonusTotal} bonus`,
-    })),
-    sortFn: (a, b) => Number(b.primary) - Number(a.primary) || a.name.localeCompare(b.name),
-    metricLabel: "Points",
-  });
-
-  // Winner logic
-  const semisResolved = semifinalGames.length === 2 && semifinalGames.every((g) => Boolean(g?.winnerName));
-
-  const noOneCorrectEither =
-    semisResolved &&
-    semifinalGames.every((g) => Number(correctCountsByGameId[g.id] ?? 0) === 0);
-
-  const maxPoints = scores.length ? Math.max(...scores.map((s) => s.points)) : 0;
-
-  let winners = [];
-  if (noOneCorrectEither) {
-    // Full tie: everyone wins
-    winners = brackets.map((b) => b.name).slice().sort((a, b) => a.localeCompare(b));
-  } else if (maxPoints > 0) {
-    winners = scores
-      .filter((s) => s.points === maxPoints)
-      .map((s) => s.name)
-      .sort((a, b) => a.localeCompare(b));
-  }
-
-  const split = winners.length ? bet.prize / winners.length : 0;
-  winners.forEach((w) => (money[w] += split));
-
-  const hitLabel = semisResolved
-    ? noOneCorrectEither
-      ? "Nobody correctly picked either championship team — full tie."
-      : ""
-    : "Scoring updates when Final Four winners are set.";
-
-  const desc =
-    "Each correctly picked championship teams = +1 point. Bonus: +3 if only you picked the team, +2 if 2-3 people picked the team, +1 if 4-6 people picked the team, +0 if 7+ people picked the team If no one correctly picks either team it is a tie among all.";
-
-  return { ...bet, winners, split, hitLabel, standings, metricLabel, desc };
-}
-// =========================
 // BET #8 — MOST WINS OVERALL (ALL GAMES, LIVE LEADER)
 // =========================
 if (bet.id === 8) {
@@ -3201,7 +3077,13 @@ const statusPill =
                   
 
                   {/* Games list */}
-                  <div style={bet.id === 8 ? styles.gamesScroll : { display: "grid", gap: 8 }}>
+                  <div
+  style={
+    bet.id === 8 || bet.id === 1 || bet.id === 2 || bet.id === 3
+      ? styles.gamesScroll
+      : { display: "grid", gap: 8 }
+  }
+>
                     
 
 {betGames.map((g, idx) => {
@@ -4080,10 +3962,12 @@ logoutBtn: {
   fontWeight: 950,
   fontSize: 12,
 },
-  gamesScroll: {
-  maxHeight: 360,              // adjust: 300–450 feels good
+gamesScroll: {
+  display: "grid",
+  gap: 8,
+  maxHeight: 420,
   overflowY: "auto",
-  paddingRight: 6,             // keeps text from hiding under scrollbar
+  paddingRight: 4,
 },
 
 gamesScrollInner: {
