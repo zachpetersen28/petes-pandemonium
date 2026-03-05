@@ -2935,7 +2935,12 @@ const sharedStatus = (() => {
         {sideBetComputed.results.map((bet) => {
           // ✅ IMPORTANT: This keeps your existing bet → games logic (no scoring/config changes)
 const betGames = (() => {
-  // 1) If the bet explicitly lists gameIds, use that (most reliable)
+  // ✅ BET #8 should include ALL games (most wins overall)
+  if (bet.id === 8) {
+    return games.slice().sort(compareByOrderThenId);
+  }
+
+  // 1) If bet explicitly lists gameIds, use those (most reliable)
   if (Array.isArray(bet.gameIds) && bet.gameIds.length) {
     const idSet = new Set(bet.gameIds.map((x) => Number(x)).filter(Number.isFinite));
     return games
@@ -2944,15 +2949,23 @@ const betGames = (() => {
       .sort(compareByOrderThenId);
   }
 
-  // 2) Otherwise, use round only (since we're removing day-based side bets)
-  if (bet.round) {
-    return games
-      .filter((g) => String(g.round) === String(bet.round))
-      .slice()
-      .sort(compareByOrderThenId);
-  }
+  // 2) Otherwise use day/round rules
+  return games
+    .filter((g) => {
+      const hasDay = Number.isFinite(betDay);
+      const hasRound = Boolean(bet.round);
 
-  return [];
+      const dayMatch = hasDay && effectiveDayForGame(g) === betDay;
+      const roundMatch = hasRound && g.round === bet.round;
+
+      // If BOTH are provided, require BOTH
+      if (hasDay && hasRound) return dayMatch && roundMatch;
+      if (hasDay) return dayMatch;
+      if (hasRound) return roundMatch;
+      return false;
+    })
+    .slice()
+    .sort(compareByOrderThenId);
 })();
 
           const open = expandedBet === bet.id;
@@ -3053,7 +3066,7 @@ const statusPill =
                   }}
                 />
 
-                <div style={{ display: "grid", gap: 10, flex: 1, minWidth: 0 }}>
+                <div style={{ display: "grid", gap: 8, flex: 1, minWidth: 0 }}>
                   {/* Row 1: Title + status + prize */}
                   <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                     <div style={{ display: "flex", gap: 10, minWidth: 0, flex: 1 }}>
