@@ -3176,7 +3176,7 @@ const statusPill =
       <div>
 <Card title="Moneyboard" rightHeader={<Pill tone="green">AUTO</Pill>}>
   <div style={styles.moneyboardWrap}>
-    <div style={styles.moneyboardHeader}>
+    <div style={isDesktop ? styles.moneyboardHeader : styles.moneyboardHeaderMobile}>
       <div>#</div>
       <div>Player</div>
       <div style={{ textAlign: "right" }}>Winnings</div>
@@ -3190,15 +3190,14 @@ const statusPill =
           <div
             key={row.name}
             style={{
-              ...styles.moneyboardRow,
-              ...(i === 0 ? styles.moneyboardRowTop : {}),
-            }}
+  ...(isDesktop ? styles.moneyboardRow : styles.moneyboardRowMobile),
+  ...(i === 0 ? styles.moneyboardRowTop : {}),
+}}
           >
             <div style={styles.moneyboardRank}>
   {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
 </div>
-            <div style={styles.moneyboardName}>{row.name}</div>
-            <div style={styles.moneyboardAmt}>{dollars(row.money)}</div>
+            <div style={isDesktop ? styles.moneyboardName : styles.moneyboardNameMobile}>{row.name}</div>
           </div>
         ))}
     </div>
@@ -3218,36 +3217,55 @@ const statusPill =
               <div>
 <Card title="Leaderboard" subtitle="ESPN Points" rightHeader={<Pill tone="green">LIVE</Pill>}>
   <div style={styles.moneyboardWrap}>
-    <div style={styles.lbHeader}>
-      <div>#</div>
-      <div>Player</div>
-      <div style={{ textAlign: "right" }}>Points</div>
+<div style={isDesktop ? styles.lbHeaderDesktop : styles.lbHeaderMobile}>
+  <div>#</div>
+  <div>Player</div>
+  <div style={{ textAlign: "right" }}>Points</div>
+
+  {isDesktop ? (
+    <>
       <div style={{ textAlign: "right" }}>Remaining</div>
       <div>Biggest Boost (Day {boostDay})</div>
-    </div>
+    </>
+  ) : null}
+</div>
 
     <div style={styles.moneyboardList}>
       {pointsLeaderboard.map((row, i) => (
-        <div
-          key={row.name}
-          style={{
-            ...styles.lbRow,
-            ...(i === 0 ? styles.moneyboardRowTop : {}),
-          }}
-        >
-<div style={styles.moneyboardRank}>
-  {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
+<div
+  key={row.name}
+  style={{
+    ...(isDesktop ? styles.lbRowDesktop : styles.lbRowMobile),
+    ...(i === 0 ? styles.moneyboardRowTop : {}),
+  }}
+>
+  <div style={styles.moneyboardRank}>
+    {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
+  </div>
+
+  <div style={{ minWidth: 0 }}>
+    <div style={styles.lbName}>{row.name}</div>
+
+    {!isDesktop ? (
+      <div style={styles.lbSubText}>
+        Rem: <b>{row.remain}</b>
+        {row.boost ? ` • ${row.boost}` : ""}
+      </div>
+    ) : null}
+  </div>
+
+  <div style={styles.lbValueRight}>{row.points}</div>
+
+  {isDesktop ? (
+    <>
+      <div style={styles.lbValueRight}>{row.remain}</div>
+
+      <div style={styles.lbBoostCell}>
+        {row.boost ? <Pill tone="green">{row.boost}</Pill> : <Pill>—</Pill>}
+      </div>
+    </>
+  ) : null}
 </div>
-
-          <div style={styles.lbName}>{row.name}</div>
-
-          <div style={styles.lbValueRight}>{row.points}</div>
-          <div style={styles.lbValueRight}>{row.remain}</div>
-
-          <div style={styles.lbBoostCell}>
-            {row.boost ? <Pill tone="green">{row.boost}</Pill> : <Pill>—</Pill>}
-          </div>
-        </div>
       ))}
     </div>
   </div>
@@ -3257,7 +3275,7 @@ const statusPill =
               <div>
                 <Card title="Moneyboard" rightHeader={<Pill tone="green">LIVE</Pill>}>
   <div style={styles.moneyboardWrap}>
-    <div style={styles.moneyboardHeader}>
+   <div style={isDesktop ? styles.moneyboardHeader : styles.moneyboardHeaderMobile}>
       <div>#</div>
       <div>Player</div>
       <div style={{ textAlign: "right" }}>Winnings</div>
@@ -3268,15 +3286,16 @@ const statusPill =
         <div
           key={r.name}
           style={{
-            ...styles.moneyboardRow,
-            ...(i === 0 ? styles.moneyboardRowTop : {}),
-          }}
+  ...(isDesktop ? styles.moneyboardRow : styles.moneyboardRowMobile),
+  ...(i === 0 ? styles.moneyboardRowTop : {}),
+}}
         >
 <div style={styles.moneyboardRank}>
   {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
 </div>
 
-          <div style={styles.moneyboardName}>{r.name}</div>
+         <div style={isDesktop ? styles.moneyboardName : styles.moneyboardNameMobile}>{r.name}</div>
+<div style={isDesktop ? styles.moneyboardAmt : styles.moneyboardAmtMobile}>{dollars(/* same value you already had */)}</div>
 
           <div style={{ textAlign: "right" }}>
             <div style={styles.moneyboardAmt}>{dollars(r.total)}</div>
@@ -4644,6 +4663,69 @@ leaderRow: {
   boxShadow: "0 10px 22px rgba(2,6,23,0.06)",
 },
 
+lbHeaderMobile: {
+  display: "grid",
+  gridTemplateColumns: "44px 1fr 86px",
+  gap: 10,
+  padding: "10px 12px",
+  fontSize: 11,
+  fontWeight: 950,
+  letterSpacing: 0.8,
+  textTransform: "uppercase",
+  color: "rgba(15,23,42,0.65)",
+  background: "rgba(15,23,42,0.03)",
+  borderBottom: "1px solid rgba(15,23,42,0.08)",
+},
+
+lbRowMobile: {
+  display: "grid",
+  gridTemplateColumns: "44px 1fr 86px",
+  gap: 10,
+  alignItems: "center",
+  padding: "12px 12px",
+  borderTop: "1px solid rgba(15,23,42,0.06)",
+  background: "rgba(255,255,255,0.92)",
+},
+
+lbHeaderDesktop: {
+  display: "grid",
+  gridTemplateColumns: "44px 1fr 80px 90px 1.1fr",
+  gap: 8,
+  padding: "10px 12px",
+  fontSize: 11,
+  fontWeight: 950,
+  letterSpacing: 0.8,
+  textTransform: "uppercase",
+  color: "rgba(15,23,42,0.65)",
+  background: "rgba(15,23,42,0.03)",
+  borderBottom: "1px solid rgba(15,23,42,0.08)",
+  alignItems: "center",
+},
+
+lbRowDesktop: {
+  display: "grid",
+  gridTemplateColumns: "44px 1fr 80px 90px 1.1fr",
+  gap: 8,
+  alignItems: "center",
+  padding: "12px 12px",
+  borderTop: "1px solid rgba(15,23,42,0.06)",
+  background: "rgba(255,255,255,0.92)",
+},
+
+lbHeaderMobile: {
+  display: "grid",
+  gridTemplateColumns: "44px 1fr 86px",
+  gap: 10,
+  alignItems: "center",
+},
+
+lbSubText: {
+  fontSize: 11,
+  fontWeight: 800,
+  opacity: 0.65,
+  marginTop: 2,
+  lineHeight: 1.2,
+},
 leaderRankBadge: {
   width: 34,
   height: 34,
