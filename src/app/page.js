@@ -953,46 +953,83 @@ useEffect(() => {
     router.replace("/login");
   };
 
-  /* =========================
-     LOAD SHARED STATE ONCE
-  ========================= */
-  useEffect(() => {
-    let cancelled = false;
+/* =========================
+   LOAD + REFRESH SHARED STATE
+========================= */
+useEffect(() => {
+  let cancelled = false;
 
-    const load = async () => {
-      setSharedError("");
-      try {
-        const res = await fetch("/api/state", { cache: "no-store", credentials: "include" });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load /api/state");
+  const load = async (silent = false) => {
+    if (!silent) setSharedError("");
 
-        const st = data.state || {};
-        if (cancelled) return;
+    try {
+      const res = await fetch("/api/state", {
+        cache: "no-store",
+        credentials: "include",
+      });
 
-        if (st.seedTeamsByRegion) setSeedTeamsByRegion(st.seedTeamsByRegion);
-        if (Array.isArray(st.games)) setGames(recomputeDerivedMatchups(st.games));
-        if (Array.isArray(st.brackets)) setBrackets(st.brackets);
-        if (typeof st.finalGameTotalPoints === "string" || typeof st.finalGameTotalPoints === "number") {
-          setFinalGameTotalPoints(String(st.finalGameTotalPoints ?? ""));
-        }
-        if (st.scheduleOrderByGameId && typeof st.scheduleOrderByGameId === "object") {
-          setScheduleOrderByGameId(st.scheduleOrderByGameId);
-        }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load /api/state");
 
-        setServerIsAdmin(Boolean(data?.isAdmin));
-        setSharedLoaded(true);
-      } catch (e) {
-        if (cancelled) return;
-        setSharedError(e?.message || "Shared state load failed");
-        setSharedLoaded(true);
+      const st = data.state || {};
+      if (cancelled) return;
+
+      if (st.seedTeamsByRegion) setSeedTeamsByRegion(st.seedTeamsByRegion);
+
+      if (Array.isArray(st.games)) {
+        setGames(recomputeDerivedMatchups(st.games));
       }
-    };
 
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+      if (Array.isArray(st.brackets)) {
+        setBrackets(
+          st.brackets.map((b) => ({
+            ...b,
+            picks: { ...(b.picks || {}) },
+          }))
+        );
+      }
+
+      if (typeof st.finalGameTotalPoints === "string" || typeof st.finalGameTotalPoints === "number") {
+        setFinalGameTotalPoints(String(st.finalGameTotalPoints ?? ""));
+      }
+
+      if (st.scheduleOrderByGameId && typeof st.scheduleOrderByGameId === "object") {
+        setScheduleOrderByGameId(st.scheduleOrderByGameId);
+      }
+
+      setServerIsAdmin(Boolean(data?.isAdmin));
+      setSharedLoaded(true);
+      setSharedError("");
+    } catch (e) {
+      if (cancelled) return;
+      if (!silent) setSharedError(e?.message || "Shared state load failed");
+      setSharedLoaded(true);
+    }
+  };
+
+  // initial load
+  load();
+
+  // refresh every 20 seconds
+  const intervalId = setInterval(() => {
+    load(true);
+  }, 20000);
+
+  // refresh when tab becomes active again
+  const onVisibilityChange = () => {
+    if (document.visibilityState === "visible") {
+      load(true);
+    }
+  };
+
+  document.addEventListener("visibilitychange", onVisibilityChange);
+
+  return () => {
+    cancelled = true;
+    clearInterval(intervalId);
+    document.removeEventListener("visibilitychange", onVisibilityChange);
+  };
+}, []);
 
   /* =========================
      KEEP GAMES CONSISTENT WHEN SEEDS CHANGE
