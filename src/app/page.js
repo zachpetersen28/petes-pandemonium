@@ -3275,36 +3275,39 @@ const statusPill =
               <div>
                 <Card title="Moneyboard" rightHeader={<Pill tone="green">LIVE</Pill>}>
   <div style={styles.moneyboardWrap}>
-   <div style={isDesktop ? styles.moneyboardHeader : styles.moneyboardHeaderMobile}>
-      <div>#</div>
-      <div>Player</div>
-      <div style={{ textAlign: "right" }}>Winnings</div>
-    </div>
-
-    <div style={styles.moneyboardList}>
-      {totalMoneyLeaderboard.map((r, i) => (
-        <div
-          key={r.name}
-          style={{
-  ...(isDesktop ? styles.moneyboardRow : styles.moneyboardRowMobile),
-  ...(i === 0 ? styles.moneyboardRowTop : {}),
-}}
-        >
-<div style={styles.moneyboardRank}>
-  {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
+<div style={isDesktop ? styles.moneyboardHeader : styles.moneyboardHeaderMobile}>
+  <div>#</div>
+  <div>Player</div>
+  <div style={{ textAlign: "right" }}>Winnings</div>
 </div>
 
-         <div style={isDesktop ? styles.moneyboardName : styles.moneyboardNameMobile}>{r.name}</div>
-<div style={isDesktop ? styles.moneyboardAmt : styles.moneyboardAmtMobile}>{dollars(/* same value you already had */)}</div>
+<div style={styles.moneyboardList}>
+  {totalMoneyLeaderboard.map((r, i) => (
+    <div
+      key={r.name}
+      style={{
+        ...(isDesktop ? styles.moneyboardRow : styles.moneyboardRowMobile),
+        ...(i === 0 ? styles.moneyboardRowTop : {}),
+      }}
+    >
+      <div style={isDesktop ? styles.moneyboardRank : styles.moneyboardRankMobile}>
+        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
+      </div>
 
-          <div style={{ textAlign: "right" }}>
-            <div style={styles.moneyboardAmt}>{dollars(r.total)}</div>
-                <div>Grand: {dollars(r.grand)}</div>
-    <div>Side: {dollars(r.side)}</div>
-          </div>
+      <div style={isDesktop ? styles.moneyboardName : styles.moneyboardNameMobile}>
+        {r.name}
+      </div>
+
+      <div style={styles.moneyboardRightMobile}>
+        <div style={isDesktop ? styles.moneyboardAmt : styles.moneyboardAmtMobile}>
+          {dollars(r.total)}
         </div>
-      ))}
+        <div style={styles.moneyboardSubMobile}>Grand: {dollars(r.grand)}</div>
+        <div style={styles.moneyboardSubMobile}>Side: {dollars(r.side)}</div>
+      </div>
     </div>
+  ))}
+</div>
   </div>
 </Card>
               </div>
@@ -4662,7 +4665,74 @@ leaderRow: {
   alignItems: "center",
   boxShadow: "0 10px 22px rgba(2,6,23,0.06)",
 },
+moneyboardHeaderMobile: {
+  display: "grid",
+  gridTemplateColumns: "34px minmax(0, 1fr) 108px",
+  gap: 6,
+  padding: "10px 10px",
+  fontSize: 11,
+  fontWeight: 950,
+  letterSpacing: 0.6,
+  textTransform: "uppercase",
+  color: "rgba(15,23,42,0.65)",
+  background: "rgba(15,23,42,0.03)",
+  borderBottom: "1px solid rgba(15,23,42,0.08)",
+  alignItems: "center",
+},
 
+moneyboardRowMobile: {
+  display: "grid",
+  gridTemplateColumns: "34px minmax(0, 1fr) 108px",
+  gap: 6,
+  alignItems: "center",
+  padding: "10px 10px",
+  borderTop: "1px solid rgba(15,23,42,0.06)",
+  background: "rgba(255,255,255,0.92)",
+},
+
+moneyboardRankMobile: {
+  width: 28,
+  height: 28,
+  display: "grid",
+  placeItems: "center",
+  fontWeight: 950,
+  fontSize: 14,
+  background: "transparent",
+  border: "none",
+},
+
+moneyboardNameMobile: {
+  fontWeight: 900,
+  fontSize: 14,
+  color: "#0f172a",
+  minWidth: 0,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+},
+
+moneyboardAmtMobile: {
+  textAlign: "right",
+  fontWeight: 950,
+  fontSize: 13,
+  color: "#0f172a",
+  whiteSpace: "nowrap",
+  lineHeight: "16px",
+},
+
+moneyboardRightMobile: {
+  textAlign: "right",
+  minWidth: 0,
+},
+
+moneyboardSubMobile: {
+  marginTop: 2,
+  fontSize: 10,
+  fontWeight: 800,
+  color: "rgba(15,23,42,0.60)",
+  lineHeight: "12px",
+  whiteSpace: "nowrap",
+},
 lbHeaderMobile: {
   display: "grid",
   gridTemplateColumns: "44px 1fr 86px",
