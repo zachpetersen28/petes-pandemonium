@@ -3218,9 +3218,9 @@ const statusPill =
 <Card title="Leaderboard" subtitle="ESPN Points" rightHeader={<Pill tone="green">LIVE</Pill>}>
   <div style={styles.moneyboardWrap}>
 <div style={isDesktop ? styles.lbHeaderDesktop : styles.lbHeaderMobile}>
-<div style={{ textAlign: "center" }}>#</div>
-<div>Player</div>
-<div style={{ textAlign: "right" }}>Points</div>
+  <div style={isDesktop ? {} : styles.lbHeaderRankMobile}>#</div>
+  <div style={isDesktop ? {} : styles.lbHeaderPlayerMobile}>Player</div>
+  <div style={isDesktop ? { textAlign: "right" } : styles.lbHeaderPointsMobile}>Points</div>
 
   {isDesktop ? (
     <>
@@ -4831,7 +4831,20 @@ leaderValueBig: {
   textAlign: "right",
   color: "#0f172a",
 },
+lbHeaderRankMobile: {
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+},
 
+lbHeaderPlayerMobile: {
+  paddingLeft: 2,
+},
+
+lbHeaderPointsMobile: {
+  textAlign: "right",
+  paddingRight: 4,
+},
 leaderRight: {
   display: "flex",
   justifyContent: "flex-end",
