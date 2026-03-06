@@ -3184,22 +3184,31 @@ const statusPill =
 
     <div style={styles.moneyboardList}>
       {Object.entries(sideBetComputed.sideBetMoneyByPlayer)
-        .map(([name, money]) => ({ name, money }))
-        .sort((a, b) => b.money - a.money)
-        .map((row, i) => (
-          <div
-            key={row.name}
-            style={{
-  ...(isDesktop ? styles.moneyboardRow : styles.moneyboardRowMobile),
-  ...(i === 0 ? styles.moneyboardRowTop : {}),
-}}
-          >
-            <div style={styles.moneyboardRank}>
-  {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
-</div>
-            <div style={isDesktop ? styles.moneyboardName : styles.moneyboardNameMobile}>{row.name}</div>
-          </div>
-        ))}
+  .map(([name, money]) => ({ name, money }))
+  .sort((a, b) => b.money - a.money)
+  .map((row, i) => (
+    <div
+      key={row.name}
+      style={{
+        ...(isDesktop ? styles.moneyboardRow : styles.moneyboardRowMobile),
+        ...(i === 0 ? styles.moneyboardRowTop : {}),
+      }}
+    >
+      <div style={isDesktop ? styles.moneyboardRank : styles.moneyboardRankMobile}>
+        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
+      </div>
+
+      <div style={isDesktop ? styles.moneyboardName : styles.moneyboardNameMobile}>
+        {row.name}
+      </div>
+
+      <div style={styles.moneyboardRightMobile}>
+        <div style={isDesktop ? styles.moneyboardAmt : styles.moneyboardAmtMobile}>
+          {dollars(row.money)}
+        </div>
+      </div>
+    </div>
+  ))}
     </div>
   </div>
 </Card>
