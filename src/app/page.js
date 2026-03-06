@@ -3218,9 +3218,9 @@ const statusPill =
 <Card title="Leaderboard" subtitle="ESPN Points" rightHeader={<Pill tone="green">LIVE</Pill>}>
   <div style={styles.moneyboardWrap}>
 <div style={isDesktop ? styles.lbHeaderDesktop : styles.lbHeaderMobile}>
-  <div>#</div>
-  <div>Player</div>
-  <div style={{ textAlign: "right" }}>Points</div>
+<div style={{ textAlign: "center" }}>#</div>
+<div>Player</div>
+<div style={{ textAlign: "right" }}>Points</div>
 
   {isDesktop ? (
     <>
@@ -4737,6 +4737,7 @@ lbHeaderMobile: {
   display: "grid",
   gridTemplateColumns: "44px 1fr 86px",
   gap: 10,
+  alignItems: "center",
   padding: "10px 12px",
   fontSize: 11,
   fontWeight: 950,
