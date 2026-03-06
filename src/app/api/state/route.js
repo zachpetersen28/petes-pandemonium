@@ -115,18 +115,18 @@ async function loadDbState(supabase) {
 
   if (picksErr) throw new Error(`pp_picks read failed: ${picksErr.message}`);
 
-  const picksByPlayerId = new Map();
-  for (const r of pickRows || []) {
-    const pid = Number(r.player_id);
-    if (!picksByPlayerId.has(pid)) picksByPlayerId.set(pid, {});
-    picksByPlayerId.get(pid)[Number(r.game_id)] = String(r.pick_name);
-  }
+const picksByPlayerId = new Map();
+for (const r of pickRows || []) {
+  const pid = String(r.player_id); // ✅ keep UUID as string
+  if (!picksByPlayerId.has(pid)) picksByPlayerId.set(pid, {});
+  picksByPlayerId.get(pid)[Number(r.game_id)] = String(r.pick_name);
+}
 
-  const brackets = (playerRows || []).map((p) => ({
-    name: String(p.name),
-    picks: picksByPlayerId.get(Number(p.id)) || {},
-    tiebreaker: p.tiebreaker_total_points == null ? null : Number(p.tiebreaker_total_points),
-  }));
+const brackets = (playerRows || []).map((p) => ({
+  name: String(p.name),
+  picks: { ...(picksByPlayerId.get(String(p.id)) || {}) }, // ✅ lookup by UUID string + clone
+  tiebreaker: p.tiebreaker_total_points == null ? null : Number(p.tiebreaker_total_points),
+}));
 
   return {
     games,
