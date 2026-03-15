@@ -1151,6 +1151,14 @@ const playerList = useMemo(
 useEffect(() => {
   if (!playerViewSelected && playerList.length) setPlayerViewSelected(playerList[0]);
 }, [playerViewSelected, playerList]);
+const selectedBuildBracket = useMemo(() => {
+  return brackets.find((b) => safeLower(b.name) === safeLower(playerViewSelected)) || null;
+}, [brackets, playerViewSelected]);
+
+const projectedGamesForPlayer = useMemo(() => {
+  if (!selectedBuildBracket) return games;
+  return computeBracketFromPicks(games, selectedBuildBracket.picks || {});
+}, [games, selectedBuildBracket]);
 // ORDER# helpers (order first)
 
 
@@ -1183,7 +1191,62 @@ useEffect(() => {
     if (w.seed == null || l.seed == null) return false;
     return Number(w.seed) > Number(l.seed);
   };
+function computeBracketFromPicks(baseGames, picks) {
+  const cloned = baseGames
+    .map((g) => ({
+      ...g,
+      teams: (g.teams || []).map((t) => ({ ...t })),
+      winnerName: "",
+    }))
+    .sort((a, b) => a.id - b.id);
 
+  const byId = new Map(cloned.map((g) => [g.id, g]));
+
+  const getPickedWinner = (g) => {
+    const pickRaw = String(picks?.[g.id] ?? "").trim();
+    if (!pickRaw) return null;
+
+    const t1 = String(g?.teams?.[0]?.name || "").trim();
+    const t2 = String(g?.teams?.[1]?.name || "").trim();
+    const candidates = [t1, t2].filter((x) => x && x !== "TBD");
+
+    const pickNorm = normalizeNameMatch(pickRaw, candidates);
+    if (!pickNorm) return null;
+
+    return pickNorm;
+  };
+
+  for (const g of cloned) {
+    if (Array.isArray(g.sources) && g.sources.length === 2) {
+      const a = byId.get(g.sources[0]);
+      const b = byId.get(g.sources[1]);
+
+      const aWinner = a ? getPickedWinner(a) : null;
+      const bWinner = b ? getPickedWinner(b) : null;
+
+      const aTeam =
+        aWinner && a
+          ? (a.teams || []).find((t) => safeLower(t.name) === safeLower(aWinner)) || { name: "TBD", seed: null }
+          : { name: "TBD", seed: null };
+
+      const bTeam =
+        bWinner && b
+          ? (b.teams || []).find((t) => safeLower(t.name) === safeLower(bWinner)) || { name: "TBD", seed: null }
+          : { name: "TBD", seed: null };
+
+      g.teams = [
+        aWinner ? { name: aTeam.name, seed: aTeam.seed } : { name: "TBD", seed: null },
+        bWinner ? { name: bTeam.name, seed: bTeam.seed } : { name: "TBD", seed: null },
+      ];
+    }
+
+    const pickedWinner = getPickedWinner(g);
+    g.winnerName = pickedWinner || "";
+    byId.set(g.id, g);
+  }
+
+  return cloned;
+}
   const eliminatedTeams = useMemo(() => computeEliminatedTeams(games), [games]);
   const possibleTeamsByGame = useMemo(() => computePossibleTeamsByGame(games), [games]);
   useEffect(() => {
@@ -2206,7 +2269,23 @@ const simulateWhere = (predicate, label) => {
       return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
     });
   };
+const setPlayerPick = (playerName, gameId, teamName) => {
+  if (!requireAdmin("Build bracket picks")) return;
 
+  setBrackets((prev) =>
+    prev.map((b) =>
+      safeLower(b.name) !== safeLower(playerName)
+        ? b
+        : {
+            ...b,
+            picks: {
+              ...(b.picks || {}),
+              [gameId]: teamName,
+            },
+          }
+    )
+  );
+};
   const onUploadBracketsCSV = async (file) => {
     setBracketsMsg("");
     if (!file) return;
@@ -3381,6 +3460,9 @@ const statusPill =
       <button onClick={() => setBracketViewMode("player")} style={tabPill(bracketViewMode === "player")}>
         View by Player
       </button>
+      <button onClick={() => setBracketViewMode("build")} style={tabPill(bracketViewMode === "build")}>
+  Build Bracket
+</button>
     </div>
 
     {/* MAP */}
@@ -3733,6 +3815,110 @@ const statusPill =
                 </div>
               );
             })}
+          </div>
+        </div>
+      </Card>
+    </div>
+  </div>
+)}
+{/* BUILD: Bracket Entry */}
+{bracketViewMode === "build" && (
+  <div style={{ marginTop: 14 }}>
+    <Card
+      title="Build Bracket"
+      subtitle="Select a player, then click a team in each matchup to advance them."
+      rightHeader={<Pill tone="green">ADMIN</Pill>}
+    >
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <select
+          value={playerViewSelected}
+          onChange={(e) => setPlayerViewSelected(e.target.value)}
+          style={styles.select}
+        >
+          {playerList.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+
+        <Pill tone="green">Editing: {playerViewSelected || "—"}</Pill>
+      </div>
+    </Card>
+
+    <div style={{ marginTop: 12 }}>
+      <Card
+        title="Bracket Builder"
+        subtitle="Click a team to set that player's pick for the game."
+        rightHeader={<Pill tone="blue">LIVE</Pill>}
+      >
+        <div style={{ overflowX: "auto", paddingBottom: 8 }}>
+          <div style={{ display: "grid", gap: 10 }}>
+            {projectedGamesForPlayer
+              .slice()
+              .sort(compareByOrderThenId)
+              .map((g) => {
+                const t1 = g?.teams?.[0];
+                const t2 = g?.teams?.[1];
+
+                const t1Name = String(t1?.name || "").trim();
+                const t2Name = String(t2?.name || "").trim();
+
+                const pickRaw = String(selectedBuildBracket?.picks?.[g.id] ?? "").trim();
+                const pickNorm = normalizeNameMatch(pickRaw, [t1Name, t2Name].filter(Boolean));
+
+                const pickIsT1 = pickNorm && safeLower(pickNorm) === safeLower(t1Name);
+                const pickIsT2 = pickNorm && safeLower(pickNorm) === safeLower(t2Name);
+
+                const teamPickStyle = (isPicked) => ({
+                  padding: "8px 10px",
+                  borderRadius: 10,
+                  cursor: t1Name === "TBD" || t2Name === "TBD" ? "default" : "pointer",
+                  border: isPicked
+                    ? "2px solid rgba(34,197,94,0.45)"
+                    : "1px solid rgba(15,23,42,0.12)",
+                  background: isPicked ? "rgba(34,197,94,0.10)" : "white",
+                  fontWeight: isPicked ? 950 : 850,
+                });
+
+                return (
+                  <div key={g.id} style={styles.gameRow}>
+                    <div style={styles.gameLeft}>
+                      <div style={styles.gameId}>
+                        Game {g.id} <span style={{ opacity: 0.75 }}>• {g.round} • {g.slot?.region}</span>
+                      </div>
+
+                      <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                        <div
+                          onClick={() => {
+                            if (!playerViewSelected) return;
+                            if (!t1Name || t1Name === "TBD") return;
+                            setPlayerPick(playerViewSelected, g.id, t1Name);
+                          }}
+                          style={teamPickStyle(pickIsT1)}
+                        >
+                          ({t1?.seed ?? "—"}) {t1Name || "TBD"}
+                        </div>
+
+                        <div
+                          onClick={() => {
+                            if (!playerViewSelected) return;
+                            if (!t2Name || t2Name === "TBD") return;
+                            setPlayerPick(playerViewSelected, g.id, t2Name);
+                          }}
+                          style={teamPickStyle(pickIsT2)}
+                        >
+                          ({t2?.seed ?? "—"}) {t2Name || "TBD"}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={styles.gameRight}>
+                      {pickRaw ? <Pill tone="green">Pick: {pickRaw}</Pill> : <Pill>Pending</Pill>}
+                    </div>
+                  </div>
+                );
+              })}
           </div>
         </div>
       </Card>
