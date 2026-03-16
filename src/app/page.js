@@ -1160,6 +1160,7 @@ const projectedGamesForPlayer = useMemo(() => {
   if (!selectedBuildBracket) return games;
   return computeBracketFromPicks(games, selectedBuildBracket.picks || {});
 }, [games, selectedBuildBracket]);
+
 // ORDER# helpers (order first)
 
 
@@ -1192,6 +1193,62 @@ const projectedGamesForPlayer = useMemo(() => {
     if (w.seed == null || l.seed == null) return false;
     return Number(w.seed) > Number(l.seed);
   };
+  function computeBracketFromPicks(baseGames, picks) {
+  const cloned = baseGames
+    .map((g) => ({
+      ...g,
+      teams: (g.teams || []).map((t) => ({ ...t })),
+      winnerName: "",
+    }))
+    .sort((a, b) => a.id - b.id);
+
+  const byId = new Map(cloned.map((g) => [g.id, g]));
+
+  const getPickedWinner = (g) => {
+    const pickRaw = String(picks?.[g.id] ?? "").trim();
+    if (!pickRaw) return null;
+
+    const t1 = String(g?.teams?.[0]?.name || "").trim();
+    const t2 = String(g?.teams?.[1]?.name || "").trim();
+    const candidates = [t1, t2].filter((x) => x && x !== "TBD");
+
+    const pickNorm = normalizeNameMatch(pickRaw, candidates);
+    if (!pickNorm) return null;
+
+    return pickNorm;
+  };
+
+  for (const g of cloned) {
+    if (Array.isArray(g.sources) && g.sources.length === 2) {
+      const a = byId.get(g.sources[0]);
+      const b = byId.get(g.sources[1]);
+
+      const aWinner = a ? getPickedWinner(a) : null;
+      const bWinner = b ? getPickedWinner(b) : null;
+
+      const aTeam =
+        aWinner && a
+          ? (a.teams || []).find((t) => safeLower(t.name) === safeLower(aWinner)) || { name: "TBD", seed: null }
+          : { name: "TBD", seed: null };
+
+      const bTeam =
+        bWinner && b
+          ? (b.teams || []).find((t) => safeLower(t.name) === safeLower(bWinner)) || { name: "TBD", seed: null }
+          : { name: "TBD", seed: null };
+
+      g.teams = [
+        aWinner ? { name: aTeam.name, seed: aTeam.seed } : { name: "TBD", seed: null },
+        bWinner ? { name: bTeam.name, seed: bTeam.seed } : { name: "TBD", seed: null },
+      ];
+    }
+
+    const pickedWinner = getPickedWinner(g);
+    g.winnerName = pickedWinner || "";
+    byId.set(g.id, g);
+  }
+
+  return cloned;
+}
 function computeBracketFromPicks(baseGames, picks) {
   const cloned = baseGames
     .map((g) => ({
@@ -2549,7 +2606,7 @@ function playersWhoPickedWinnerForGame(game, brackets) {
      BRACKET MAP DATA
   ========================= */
   const bracketMap = useMemo(() => buildBracketMapLayout({ games }), [games]);
-
+const projectedBracketMap = useMemo(() => buildBracketMap(projectedGamesForPlayer), [projectedGamesForPlayer]);
   /* =========================
      AUTH GUARDS
   ========================= */
@@ -3857,7 +3914,7 @@ const statusPill =
   <div style={{ marginTop: 14 }}>
     <Card
       title="Build Bracket"
-      subtitle="Create a player first. In the next step, this mode will become the clickable bracket entry tool."
+      subtitle="Create or select a player. This preview shows that player's projected bracket based on saved picks."
       rightHeader={<Pill tone="green">ADMIN</Pill>}
     >
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
@@ -3892,103 +3949,145 @@ const statusPill =
       </div>
 
       <div style={{ marginTop: 12, ...styles.helpText }}>
-        Step 1: Create a blank player bracket. Step 2: In the next deploy, this screen will become the clickable bracket builder.
+        This is a projected bracket view from the selected player's picks. Click-to-advance comes in the next deploy.
       </div>
     </Card>
-  </div>
-)}
-            {/* View by Game */}
-            {bracketViewMode === "game" && (
-              <div style={{ marginTop: 14 }}>
-                <Card title="By Game" subtitle="Pick a game to see everyone’s pick + who’s still alive." rightHeader={<Pill tone="blue">LIVE</Pill>}>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                    <input
-                      value={teamSearch}
-                      onChange={(e) => setTeamSearch(e.target.value)}
-                      placeholder="Search teams / matchups…"
-                      style={{ ...styles.input, maxWidth: 340 }}
-                    />
 
-                    <select value={selectedGameId} onChange={(e) => setSelectedGameId(e.target.value)} style={styles.select}>
-                      {gameListForDropdown
-                        .filter((g) => {
-                          const q = safeLower(teamSearch);
-                          if (!q) return true;
-                          return (
-                            safeLower(matchupLabel(g)).includes(q) ||
-                            safeLower(g.slot?.region || "").includes(q) ||
-                            safeLower(g.round || "").includes(q)
-                          );
-                        })
-                        .map((g) => {
-                          const ord = scheduleOrderByGameId?.[g.id];
-                          return (
-                            <option key={g.id} value={String(g.id)}>
-  {ord ? `Order #${ord} — ` : ""}{matchupLabel(g)} — Game {g.id}
-</option>
-                          );
-                        })}
-                    </select>
+    <div style={{ marginTop: 12 }}>
+      <Card
+        title="Projected Bracket"
+        subtitle="This preview is driven by the selected player’s saved picks."
+        rightHeader={<Pill tone="blue">LIVE</Pill>}
+      >
+        <div style={{ overflowX: "auto", paddingBottom: 8 }}>
+          <div style={{ position: "relative", width: projectedBracketMap.width, height: projectedBracketMap.height, minHeight: 650 }}>
+            <svg
+              width={projectedBracketMap.width}
+              height={projectedBracketMap.height}
+              style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+            >
+              {projectedBracketMap.segments.map((seg, idx) => {
+                const d = `M ${seg[0].x} ${seg[0].y} L ${seg[1].x} ${seg[1].y} L ${seg[2].x} ${seg[2].y} L ${seg[3].x} ${seg[3].y}`;
+                return <path key={idx} d={d} fill="none" stroke="rgba(15,23,42,0.35)" strokeWidth="2" />;
+              })}
+            </svg>
+
+            {projectedBracketMap.nodes.map((n) => {
+              if (n.kind === "join") {
+                return (
+                  <div
+                    key={n.id}
+                    style={{
+                      position: "absolute",
+                      left: n.x,
+                      top: n.y,
+                      width: n.w,
+                      height: n.h,
+                      borderRadius: 999,
+                      background: "rgba(15,23,42,0.25)",
+                      color: "#0f172a",
+                      border: "2px solid rgba(15,23,42,0.28)",
+                      boxShadow: "0 6px 14px rgba(2,6,23,0.10)",
+                    }}
+                    title={`Join to Game ${String(n.joinForTarget)}`}
+                  />
+                );
+              }
+
+              const g = projectedBracketMap.byId.get(n.id);
+              const orderVal = scheduleOrderByGameId?.[n.id] ?? "";
+
+              const t1 = g?.teams?.[0];
+              const t2 = g?.teams?.[1];
+
+              const pickRaw = String(selectedBuildBracket?.picks?.[g?.id] ?? "").trim();
+
+              const lineFromTeam = (team, srcId) => {
+                const nm = team?.name;
+                const seed = team?.seed;
+                if (nm && nm !== "TBD") return `(${seed ?? "—"}) ${nm}`;
+                if (srcId) return `TBD (W of Game ${srcId})`;
+                return "TBD";
+              };
+
+              const l1 = lineFromTeam(t1, g?.sources?.[0]);
+              const l2 = lineFromTeam(t2, g?.sources?.[1]);
+
+              const t1Picked = pickRaw && safeLower(pickRaw) === safeLower(t1?.name || "");
+              const t2Picked = pickRaw && safeLower(pickRaw) === safeLower(t2?.name || "");
+
+              const lineStyle = (isPicked) => ({
+                ...styles.clamp2,
+                ...(isPicked ? styles.playerPickLine : {}),
+              });
+
+              return (
+                <div
+                  key={n.id}
+                  style={{
+                    position: "absolute",
+                    left: n.x,
+                    top: n.y,
+                    width: n.w,
+                    height: n.h,
+                    borderRadius: 16,
+                    border: "1px solid rgba(15,23,42,0.12)",
+                    background: "white",
+                    boxShadow: "0 12px 26px rgba(2,6,23,0.08)",
+                    padding: 12,
+                    boxSizing: "border-box",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                    <div style={{ fontWeight: 950, fontSize: 12 }}>
+                      {orderVal ? (
+                        <>
+                          Order #{orderVal} <span style={{ opacity: 0.6 }}>•</span> Game {g?.id}{" "}
+                          <span style={{ opacity: 0.7 }}>• {g?.round}</span>
+                        </>
+                      ) : (
+                        <>
+                          Game {g?.id} <span style={{ opacity: 0.7 }}>• {g?.round}</span>
+                        </>
+                      )}
+                    </div>
+
+                    {pickRaw ? <Pill tone="green">Pick: {pickRaw}</Pill> : <Pill>—</Pill>}
                   </div>
 
-                  {selectedGame ? (
-                    <div style={{ marginTop: 12 }}>
-                      <div style={styles.bracketGameHeader}>
-                        <div>
-                          <div style={styles.bracketGameTitle}>
-                            Game {selectedGame.id} • {selectedGame.round} • {selectedGame.slot?.region}
-                          </div>
-                          <div style={styles.bracketGameMatchup}>{matchupLabel(selectedGame)}</div>
-                        </div>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                          <Pill tone="green">Worth {ESPN_POINTS[selectedGame.round] ?? 0}</Pill>
-                          {selectedGame.winnerName ? <Pill tone="blue">Winner: {selectedGame.winnerName}</Pill> : <Pill>Pending</Pill>}
-                          {isUpset(selectedGame) ? <Pill tone="red">UPSET</Pill> : null}
-                        </div>
-                      </div>
-
-                      <div style={styles.pickTableHeader}>
-                        <div style={styles.pickColName}>Player</div>
-                        <div style={styles.pickColPick}>Pick</div>
-                        <div style={styles.pickColStatus}>Status</div>
-                      </div>
-
-                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                        {brackets
-                          .slice()
-                          .sort((a, b) => a.name.localeCompare(b.name))
-                          .map((p) => {
-                            const pick = String(p.picks?.[selectedGame.id] ?? "").trim();
-                            const info = pickRowTone(p, selectedGame);
-
-                            return (
-                              <div key={p.name} style={styles.pickRow}>
-                                <div style={styles.pickColName}>
-                                  <div style={{ fontWeight: 950 }}>{p.name}</div>
-                                </div>
-                                <div style={styles.pickColPick}>
-                                  {pick ? <span style={{ fontWeight: 850 }}>{pick}</span> : <span style={{ opacity: 0.6, fontWeight: 800 }}>—</span>}
-                                </div>
-                                <div style={styles.pickColStatus}>
-                                  {info.tone === "green" ? (
-                                    <Pill tone="green">{info.label}</Pill>
-                                  ) : info.tone === "red" ? (
-                                    <Pill tone="red">{info.label}</Pill>
-                                  ) : (
-                                    <Pill>{info.label}</Pill>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                      </div>
+                  <div style={{ flex: 1, display: "grid", gap: 6, alignContent: "start" }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 850,
+                        color: "rgba(15,23,42,0.82)",
+                        lineHeight: "16px",
+                        minHeight: 0,
+                      }}
+                    >
+                      <div style={lineStyle(t1Picked)}>{l1}</div>
+                      <div style={lineStyle(t2Picked)}>{l2}</div>
                     </div>
-                  ) : (
-                    <div style={{ marginTop: 12, ...styles.notice }}>Pick a game to view player picks.</div>
-                  )}
-                </Card>
-              </div>
-            )}
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                    <div style={{ fontSize: 11, fontWeight: 900, opacity: 0.72 }}>{g?.slot?.region}</div>
+                    <div style={{ fontSize: 11, fontWeight: 900, opacity: 0.65 }}>
+                      {pickRaw ? "Picked" : "Pending"}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </Card>
+    </div>
+  </div>
+)}
 
             {/* View by Team */}
             {bracketViewMode === "team" && (
