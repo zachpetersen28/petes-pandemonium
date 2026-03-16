@@ -875,6 +875,7 @@ const [hoveredBetId, setHoveredBetId] = useState(null);
   const [selectedGameId, setSelectedGameId] = useState("");
   const [teamSearch, setTeamSearch] = useState("");
 const [playerViewSelected, setPlayerViewSelected] = useState("");
+const [newPlayerName, setNewPlayerName] = useState("");
   const [teamPageSearch, setTeamPageSearch] = useState("");
   const [teamPageSelected, setTeamPageSelected] = useState("");
 
@@ -2269,6 +2270,33 @@ const simulateWhere = (predicate, label) => {
       return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
     });
   };
+  const createEmptyBracketForPlayer = (playerName) => {
+  if (!requireAdmin("Create player bracket")) return;
+
+  const cleanName = String(playerName || "").trim();
+  if (!cleanName) {
+    setBracketsMsg("Enter a player name first.");
+    return;
+  }
+
+  setBrackets((prev) => {
+    const exists = prev.some((b) => safeLower(b.name) === safeLower(cleanName));
+    if (exists) {
+      setBracketsMsg(`${cleanName} already exists.`);
+      return prev;
+    }
+
+    const next = [...prev, { name: cleanName, picks: {}, tiebreaker: null }].sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+
+    setBracketsMsg(`Created blank bracket for ${cleanName}.`);
+    return next;
+  });
+
+  setPlayerViewSelected(cleanName);
+  setNewPlayerName("");
+};
 const setPlayerPick = (playerName, gameId, teamName) => {
   if (!requireAdmin("Build bracket picks")) return;
 
@@ -3447,23 +3475,26 @@ const statusPill =
     
 
     {/* Mode buttons UNDER the title */}
-    <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-      <button onClick={() => setBracketViewMode("map")} style={tabPill(bracketViewMode === "map")}>
-        Map
-      </button>
-      <button onClick={() => setBracketViewMode("game")} style={tabPill(bracketViewMode === "game")}>
-        View by Game
-      </button>
-      <button onClick={() => setBracketViewMode("team")} style={tabPill(bracketViewMode === "team")}>
-        View by Team
-      </button>
-      <button onClick={() => setBracketViewMode("player")} style={tabPill(bracketViewMode === "player")}>
-        View by Player
-      </button>
-      <button onClick={() => setBracketViewMode("build")} style={tabPill(bracketViewMode === "build")}>
-  Build Bracket
-</button>
-    </div>
+ <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+  <button onClick={() => setBracketViewMode("map")} style={tabPill(bracketViewMode === "map")}>
+    Map
+  </button>
+  <button onClick={() => setBracketViewMode("game")} style={tabPill(bracketViewMode === "game")}>
+    View by Game
+  </button>
+  <button onClick={() => setBracketViewMode("team")} style={tabPill(bracketViewMode === "team")}>
+    View by Team
+  </button>
+  <button onClick={() => setBracketViewMode("player")} style={tabPill(bracketViewMode === "player")}>
+    View by Player
+  </button>
+
+  {isAdmin && (
+    <button onClick={() => setBracketViewMode("build")} style={tabPill(bracketViewMode === "build")}>
+      Build Bracket
+    </button>
+  )}
+</div>
 
     {/* MAP */}
     {bracketViewMode === "map" && (
@@ -3923,6 +3954,51 @@ const statusPill =
         </div>
       </Card>
     </div>
+  </div>
+)}
+{/* BUILD: Bracket Setup (Admin Only) */}
+{isAdmin && bracketViewMode === "build" && (
+  <div style={{ marginTop: 14 }}>
+    <Card
+      title="Build Bracket"
+      subtitle="Create a player first. In the next step, this mode will become the clickable bracket entry tool."
+      rightHeader={<Pill tone="green">ADMIN</Pill>}
+    >
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <input
+          value={newPlayerName}
+          onChange={(e) => setNewPlayerName(e.target.value)}
+          placeholder="New player name"
+          style={{ ...styles.input, maxWidth: 260, marginTop: 0 }}
+        />
+
+        <button
+          onClick={() => createEmptyBracketForPlayer(newPlayerName)}
+          style={styles.btnDark}
+        >
+          Create Player
+        </button>
+
+        <select
+          value={playerViewSelected}
+          onChange={(e) => setPlayerViewSelected(e.target.value)}
+          style={styles.select}
+        >
+          <option value="">Select player</option>
+          {playerList.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+
+        <Pill tone="green">Editing: {playerViewSelected || "—"}</Pill>
+      </div>
+
+      <div style={{ marginTop: 12, ...styles.helpText }}>
+        Step 1: Create a blank player bracket. Step 2: In the next deploy, this screen will become the clickable bracket builder.
+      </div>
+    </Card>
   </div>
 )}
             {/* View by Game */}
