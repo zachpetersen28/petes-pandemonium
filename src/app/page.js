@@ -3895,6 +3895,9 @@ const statusPill =
         Step 1: Create a blank player bracket. Step 2: In the next deploy, this screen will become the clickable bracket builder.
       </div>
     </Card>
+    <div style={{ fontSize: 12, color: "#0f172a", marginBottom: 8 }}>
+  DEBUG build mode visible
+</div>
   </div>
 )}
             {/* View by Game */}
