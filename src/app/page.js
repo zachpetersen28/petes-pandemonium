@@ -2582,10 +2582,20 @@ function playersWhoPickedWinnerForGame(game, brackets) {
      BRACKET MAP DATA
   ========================= */
   const bracketMap = useMemo(() => buildBracketMapLayout({ games }), [games]);
-const projectedBracketMap = useMemo(
-  () => buildBracketMapLayout({ games: projectedGamesForPlayer }),
-  [projectedGamesForPlayer]
-);
+const projectedBracketMap = useMemo(() => {
+  try {
+    return buildBracketMapLayout({ games: projectedGamesForPlayer });
+  } catch (e) {
+    console.error("projectedBracketMap failed", e);
+    return {
+      width: 1200,
+      height: 700,
+      nodes: [],
+      segments: [],
+      byId: new Map(),
+    };
+  }
+}, [projectedGamesForPlayer]);
   /* =========================
      AUTH GUARDS
   ========================= */
@@ -3935,7 +3945,11 @@ const statusPill =
         Click a team name to save that pick for the selected player. Future rounds update automatically from saved picks.
       </div>
     </Card>
-
+<div style={{ marginTop: 10, ...styles.notice }}>
+  projected games: {projectedGamesForPlayer?.length || 0} •
+  map nodes: {projectedBracketMap?.nodes?.length || 0} •
+  map width: {projectedBracketMap?.width || 0}
+</div>
     <div style={{ marginTop: 12 }}>
       <Card
         title="Projected Bracket"
