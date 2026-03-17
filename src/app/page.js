@@ -1145,7 +1145,12 @@ const manualDayGames = useMemo(() => {
     .sort(compareByOrderThenId);
 }, [games, manualDay, scheduleOrderByGameId]);
 const playerList = useMemo(
-  () => brackets.slice().map((b) => b.name).sort((a, b) => a.localeCompare(b)),
+  () =>
+    brackets
+      .slice()
+      .map((b) => String(b.name || "").trim())
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b)),
   [brackets]
 );
 
@@ -1157,8 +1162,7 @@ const selectedBuildBracket = useMemo(() => {
 }, [brackets, playerViewSelected]);
 
 const projectedGamesForPlayer = useMemo(() => {
-  if (!selectedBuildBracket) return games;
-  return computeBracketFromPicks(games, selectedBuildBracket.picks || {});
+  return computeBracketFromPicks(games, selectedBuildBracket?.picks || {});
 }, [games, selectedBuildBracket]);
 
 // ORDER# helpers (order first)
@@ -1194,62 +1198,6 @@ const projectedGamesForPlayer = useMemo(() => {
     return Number(w.seed) > Number(l.seed);
   };
   function computeBracketFromPicks(baseGames, picks) {
-  const cloned = baseGames
-    .map((g) => ({
-      ...g,
-      teams: (g.teams || []).map((t) => ({ ...t })),
-      winnerName: "",
-    }))
-    .sort((a, b) => a.id - b.id);
-
-  const byId = new Map(cloned.map((g) => [g.id, g]));
-
-  const getPickedWinner = (g) => {
-    const pickRaw = String(picks?.[g.id] ?? "").trim();
-    if (!pickRaw) return null;
-
-    const t1 = String(g?.teams?.[0]?.name || "").trim();
-    const t2 = String(g?.teams?.[1]?.name || "").trim();
-    const candidates = [t1, t2].filter((x) => x && x !== "TBD");
-
-    const pickNorm = normalizeNameMatch(pickRaw, candidates);
-    if (!pickNorm) return null;
-
-    return pickNorm;
-  };
-
-  for (const g of cloned) {
-    if (Array.isArray(g.sources) && g.sources.length === 2) {
-      const a = byId.get(g.sources[0]);
-      const b = byId.get(g.sources[1]);
-
-      const aWinner = a ? getPickedWinner(a) : null;
-      const bWinner = b ? getPickedWinner(b) : null;
-
-      const aTeam =
-        aWinner && a
-          ? (a.teams || []).find((t) => safeLower(t.name) === safeLower(aWinner)) || { name: "TBD", seed: null }
-          : { name: "TBD", seed: null };
-
-      const bTeam =
-        bWinner && b
-          ? (b.teams || []).find((t) => safeLower(t.name) === safeLower(bWinner)) || { name: "TBD", seed: null }
-          : { name: "TBD", seed: null };
-
-      g.teams = [
-        aWinner ? { name: aTeam.name, seed: aTeam.seed } : { name: "TBD", seed: null },
-        bWinner ? { name: bTeam.name, seed: bTeam.seed } : { name: "TBD", seed: null },
-      ];
-    }
-
-    const pickedWinner = getPickedWinner(g);
-    g.winnerName = pickedWinner || "";
-    byId.set(g.id, g);
-  }
-
-  return cloned;
-}
-function computeBracketFromPicks(baseGames, picks) {
   const cloned = baseGames
     .map((g) => ({
       ...g,
@@ -2327,7 +2275,7 @@ const simulateWhere = (predicate, label) => {
       return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
     });
   };
-  const createEmptyBracketForPlayer = (playerName) => {
+const createEmptyBracketForPlayer = (playerName) => {
   if (!requireAdmin("Create player bracket")) return;
 
   const cleanName = String(playerName || "").trim();
@@ -2354,21 +2302,49 @@ const simulateWhere = (predicate, label) => {
   setPlayerViewSelected(cleanName);
   setNewPlayerName("");
 };
+
 const setPlayerPick = (playerName, gameId, teamName) => {
   if (!requireAdmin("Build bracket picks")) return;
 
+  const cleanPlayer = String(playerName || "").trim();
+  const cleanTeam = String(teamName || "").trim();
+  const gid = Number(gameId);
+
+  if (!cleanPlayer || !cleanTeam || !Number.isFinite(gid)) return;
+
   setBrackets((prev) =>
     prev.map((b) =>
-      safeLower(b.name) !== safeLower(playerName)
+      safeLower(b.name) !== safeLower(cleanPlayer)
         ? b
         : {
             ...b,
             picks: {
               ...(b.picks || {}),
-              [gameId]: teamName,
+              [gid]: cleanTeam,
             },
           }
     )
+  );
+};
+const clearPlayerPick = (playerName, gameId) => {
+  if (!requireAdmin("Clear bracket pick")) return;
+
+  const cleanPlayer = String(playerName || "").trim();
+  const gid = Number(gameId);
+  if (!cleanPlayer || !Number.isFinite(gid)) return;
+
+  setBrackets((prev) =>
+    prev.map((b) => {
+      if (safeLower(b.name) !== safeLower(cleanPlayer)) return b;
+
+      const nextPicks = { ...(b.picks || {}) };
+      delete nextPicks[gid];
+
+      return {
+        ...b,
+        picks: nextPicks,
+      };
+    })
   );
 };
   const onUploadBracketsCSV = async (file) => {
@@ -2606,7 +2582,10 @@ function playersWhoPickedWinnerForGame(game, brackets) {
      BRACKET MAP DATA
   ========================= */
   const bracketMap = useMemo(() => buildBracketMapLayout({ games }), [games]);
-const projectedBracketMap = useMemo(() => buildBracketMap(projectedGamesForPlayer), [projectedGamesForPlayer]);
+const projectedBracketMap = useMemo(
+  () => buildBracketMapLayout({ games: projectedGamesForPlayer }),
+  [projectedGamesForPlayer]
+);
   /* =========================
      AUTH GUARDS
   ========================= */
@@ -3947,9 +3926,13 @@ const statusPill =
 
         <Pill tone="green">Editing: {playerViewSelected || "—"}</Pill>
       </div>
-
+{bracketsMsg ? (
+  <div style={{ marginTop: 10, ...styles.notice }}>
+    {bracketsMsg}
+  </div>
+) : null}
       <div style={{ marginTop: 12, ...styles.helpText }}>
-        This is a projected bracket view from the selected player's picks. Click-to-advance comes in the next deploy.
+        Click a team name to save that pick for the selected player. Future rounds update automatically from saved picks.
       </div>
     </Card>
 
@@ -4013,13 +3996,23 @@ const statusPill =
               const l1 = lineFromTeam(t1, g?.sources?.[0]);
               const l2 = lineFromTeam(t2, g?.sources?.[1]);
 
-              const t1Picked = pickRaw && safeLower(pickRaw) === safeLower(t1?.name || "");
-              const t2Picked = pickRaw && safeLower(pickRaw) === safeLower(t2?.name || "");
+const t1Name = String(t1?.name || "").trim();
+const t2Name = String(t2?.name || "").trim();
+const candidates = [t1Name, t2Name].filter((x) => x && x !== "TBD");
+const pickNorm = pickRaw && candidates.length ? normalizeNameMatch(pickRaw, candidates) : pickRaw;
 
-              const lineStyle = (isPicked) => ({
-                ...styles.clamp2,
-                ...(isPicked ? styles.playerPickLine : {}),
-              });
+const t1Picked = pickNorm && safeLower(pickNorm) === safeLower(t1Name);
+const t2Picked = pickNorm && safeLower(pickNorm) === safeLower(t2Name);
+
+const clickableLineStyle = (isPicked, teamName) => ({
+  ...styles.clamp2,
+  ...(isPicked ? styles.playerPickLine : {}),
+  borderRadius: 8,
+  padding: "4px 6px",
+  cursor: teamName && teamName !== "TBD" ? "pointer" : "default",
+  border: isPicked ? "1px solid rgba(59,130,246,0.35)" : "1px solid transparent",
+  background: isPicked ? "rgba(59,130,246,0.10)" : "transparent",
+});
 
               return (
                 <div
@@ -4055,7 +4048,24 @@ const statusPill =
                       )}
                     </div>
 
-                    {pickRaw ? <Pill tone="green">Pick: {pickRaw}</Pill> : <Pill>—</Pill>}
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+  {pickRaw ? <Pill tone="green">Pick: {pickRaw}</Pill> : <Pill>—</Pill>}
+
+  {pickRaw && playerViewSelected ? (
+    <button
+      type="button"
+      onClick={() => clearPlayerPick(playerViewSelected, g.id)}
+      style={{
+        ...styles.btnGhost,
+        padding: "6px 10px",
+        borderRadius: 10,
+        fontSize: 11,
+      }}
+    >
+      Clear
+    </button>
+  ) : null}
+</div>
                   </div>
 
                   <div style={{ flex: 1, display: "grid", gap: 6, alignContent: "start" }}>
@@ -4068,8 +4078,27 @@ const statusPill =
                         minHeight: 0,
                       }}
                     >
-                      <div style={lineStyle(t1Picked)}>{l1}</div>
-                      <div style={lineStyle(t2Picked)}>{l2}</div>
+ <div
+onClick={() => {
+  if (!playerViewSelected || !g?.id) return;
+  if (!t1Name || t1Name === "TBD") return;
+  setPlayerPick(playerViewSelected, g.id, t1Name);
+}}
+  style={clickableLineStyle(t1Picked, t1Name)}
+>
+  {l1}
+</div>
+
+<div
+onClick={() => {
+  if (!playerViewSelected || !g?.id) return;
+  if (!t2Name || t2Name === "TBD") return;
+  setPlayerPick(playerViewSelected, g.id, t2Name);
+}}
+  style={clickableLineStyle(t2Picked, t2Name)}
+>
+  {l2}
+</div>
                     </div>
                   </div>
 
