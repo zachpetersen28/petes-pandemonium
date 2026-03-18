@@ -27,7 +27,27 @@ const audioRef = useRef(null);
     if (shakeTimer.current) clearTimeout(shakeTimer.current);
     shakeTimer.current = setTimeout(() => setShake(false), 520);
   };
+useEffect(() => {
+  const unlockAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.volume = 0;
+      audioRef.current.play().catch(() => {});
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
 
+    document.removeEventListener("click", unlockAudio);
+    document.removeEventListener("touchstart", unlockAudio);
+  };
+
+  document.addEventListener("click", unlockAudio);
+  document.addEventListener("touchstart", unlockAudio);
+
+  return () => {
+    document.removeEventListener("click", unlockAudio);
+    document.removeEventListener("touchstart", unlockAudio);
+  };
+}, []);
   const canSubmit = useMemo(() => {
     return Boolean(String(name).trim() && String(passcode).trim());
   }, [name, passcode]);
@@ -62,25 +82,15 @@ if (audioRef.current) {
   try {
     audioRef.current.currentTime = 0;
     audioRef.current.volume = 0.6;
-    await audioRef.current.play();
+    audioRef.current.play();
   } catch (err) {
     console.log("Audio failed:", err);
   }
 }
 
-localStorage.setItem(
-  "mm_user",
-  JSON.stringify({
-    name: n,
-    role: isAdmin ? "admin" : "user",
-    isAdmin,
-  })
-);
-
 setTimeout(() => {
   router.replace("/");
 }, 1200);
-
   if (audioRef.current) {
     try {
       audioRef.current.currentTime = 0;
@@ -93,7 +103,7 @@ setTimeout(() => {
 };
   return (
     <div style={styles.page}>
-  <audio ref={audioRef} src="/login-sound.mp3" preload="auto" />
+ <audio ref={audioRef} src="/login-sound.mp3" preload="auto" playsInline />
   <div style={styles.shell}>
         <div style={{ ...styles.card, ...(shake ? styles.cardShake : {}) }}>
           {/* HERO SECTION */}
