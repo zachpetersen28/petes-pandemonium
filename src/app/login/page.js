@@ -48,39 +48,38 @@ const onSubmit = async (e) => {
 
   const insults = [
     "Really!? It's not that hard. Try again.",
-    "Spelling is hard, especially for your kind.",
+    "Spelling is hard...",
     "I'd give up if I were you. If you can't sign in, you sure as hell can't win.",
   ];
 
-  if (p !== POOL_PASSCODE) {
-    setErrorMsg(insults[Math.floor(Math.random() * insults.length)]);
-    triggerShake();
-    return;
-  }
+if (p !== POOL_PASSCODE) {
+  setErrorMsg(insults[Math.floor(Math.random() * insults.length)]);
+  triggerShake();
+  return;
+}
 
-  let isAdmin = false;
-  if (a) {
-    try {
-      const res = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ passcode: a }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data?.ok) isAdmin = true;
-    } catch {
-      isAdmin = false;
-    }
+if (audioRef.current) {
+  try {
+    audioRef.current.currentTime = 0;
+    audioRef.current.volume = 0.6;
+    await audioRef.current.play();
+  } catch (err) {
+    console.log("Audio failed:", err);
   }
+}
 
-  localStorage.setItem(
-    "mm_user",
-    JSON.stringify({
-      name: n,
-      role: isAdmin ? "admin" : "user",
-      isAdmin,
-    })
-  );
+localStorage.setItem(
+  "mm_user",
+  JSON.stringify({
+    name: n,
+    role: isAdmin ? "admin" : "user",
+    isAdmin,
+  })
+);
+
+setTimeout(() => {
+  router.replace("/");
+}, 1200);
 
   if (audioRef.current) {
     try {
