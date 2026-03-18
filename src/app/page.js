@@ -680,7 +680,7 @@ function buildBracketMapLayout({ games }) {
   const byId = new Map(games.map((g) => [g.id, g]));
 
   const BOX_W = 280;
-  const BOX_H = 104;
+  const BOX_H = 116;
   const COL_GAP = 96;
   const ROW_GAP = 16;
   const REGION_GAP = 68;
@@ -960,13 +960,16 @@ useEffect(() => {
 useEffect(() => {
   let cancelled = false;
 
-const load = async (silent = false) => {
-  if (!silent) setSharedError("");
+  const load = async (silent = false) => {
+    if (!silent) setSharedError("");
 
-  // Prevent background refresh from overwriting fresh local admin edits
-  if (!readOnly && (sharedSaving || saveTimerRef.current)) {
-    return;
-  }
+    // Do not let background refresh overwrite fresh local admin edits
+    if (
+      !readOnlyRef.current &&
+      (sharedSavingRef.current || saveTimerRef.current || hasDirtyBracketEditsRef.current)
+    ) {
+      return;
+    }
 
     try {
       const res = await fetch("/api/state", {
@@ -975,6 +978,14 @@ const load = async (silent = false) => {
       });
 
       const data = await res.json().catch(() => ({}));
+
+      // Handle expired server auth more gently during silent refresh
+      if (res.status === 401) {
+        if (!silent) setSharedError("Unauthorized");
+        if (!cancelled) setSharedLoaded(true);
+        return;
+      }
+
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Failed to load /api/state");
 
       const st = data.state || {};
@@ -1013,15 +1024,12 @@ const load = async (silent = false) => {
     }
   };
 
-  // initial load
   load();
 
-  // refresh every 20 seconds
   const intervalId = setInterval(() => {
     load(true);
   }, 20000);
 
-  // refresh when tab becomes active again
   const onVisibilityChange = () => {
     if (document.visibilityState === "visible") {
       load(true);
@@ -1035,7 +1043,7 @@ const load = async (silent = false) => {
     clearInterval(intervalId);
     document.removeEventListener("visibilitychange", onVisibilityChange);
   };
-}, [readOnly, sharedSaving]);
+}, []);
 
   /* =========================
      KEEP GAMES CONSISTENT WHEN SEEDS CHANGE
@@ -1049,7 +1057,17 @@ const load = async (silent = false) => {
   ========================= */
   const saveTimerRef = useRef(null);
   const lastPayloadRef = useRef("");
+const readOnlyRef = useRef(readOnly);
+const sharedSavingRef = useRef(sharedSaving);
+const hasDirtyBracketEditsRef = useRef(false);
 
+useEffect(() => {
+  readOnlyRef.current = readOnly;
+}, [readOnly]);
+
+useEffect(() => {
+  sharedSavingRef.current = sharedSaving;
+}, [sharedSaving]);
   const sharedStatePayload = useMemo(() => {
     return { seedTeamsByRegion, games, brackets, finalGameTotalPoints, scheduleOrderByGameId };
   }, [seedTeamsByRegion, games, brackets, finalGameTotalPoints, scheduleOrderByGameId]);
@@ -1077,6 +1095,7 @@ const load = async (silent = false) => {
         if (!res.ok || !data?.ok) throw new Error(data?.error || "Save failed");
 
         lastPayloadRef.current = payloadString;
+        hasDirtyBracketEditsRef.current = false;
         setSharedError("");
       } catch (e) {
         setSharedError(e?.message || "Save failed");
@@ -2288,7 +2307,7 @@ const createEmptyBracketForPlayer = (playerName) => {
     setBracketsMsg("Enter a player name first.");
     return;
   }
-
+hasDirtyBracketEditsRef.current = true;
   setBrackets((prev) => {
     const exists = prev.some((b) => safeLower(b.name) === safeLower(cleanName));
     if (exists) {
@@ -2316,7 +2335,7 @@ const setPlayerPick = (playerName, gameId, teamName) => {
   const gid = Number(gameId);
 
   if (!cleanPlayer || !cleanTeam || !Number.isFinite(gid)) return;
-
+hasDirtyBracketEditsRef.current = true;
   setBrackets((prev) =>
     prev.map((b) =>
       safeLower(b.name) !== safeLower(cleanPlayer)
@@ -2337,7 +2356,7 @@ const clearPlayerPick = (playerName, gameId) => {
   const cleanPlayer = String(playerName || "").trim();
   const gid = Number(gameId);
   if (!cleanPlayer || !Number.isFinite(gid)) return;
-
+hasDirtyBracketEditsRef.current = true;
   setBrackets((prev) =>
     prev.map((b) => {
       if (safeLower(b.name) !== safeLower(cleanPlayer)) return b;
@@ -3950,11 +3969,6 @@ const statusPill =
         Click a team name to save that pick for the selected player. Future rounds update automatically from saved picks.
       </div>
     </Card>
-<div style={{ marginTop: 10, ...styles.notice }}>
-  projected games: {projectedGamesForPlayer?.length || 0} •
-  map nodes: {projectedBracketMap?.nodes?.length || 0} •
-  map width: {projectedBracketMap?.width || 0}
-</div>
     <div style={{ marginTop: 12 }}>
       <Card
         title="Projected Bracket"
@@ -4024,17 +4038,22 @@ const t1Picked = pickNorm && safeLower(pickNorm) === safeLower(t1Name);
 const t2Picked = pickNorm && safeLower(pickNorm) === safeLower(t2Name);
 
 const clickableLineStyle = (isPicked, teamName) => ({
-  ...styles.clamp2,
-  ...(isPicked ? styles.playerPickLine : {}),
+  display: "block",
+  width: "100%",
+  maxWidth: "100%",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
   borderRadius: 8,
-  padding: "4px 6px",
+  padding: "3px 6px",
   cursor: teamName && teamName !== "TBD" ? "pointer" : "default",
   border: isPicked ? "1px solid rgba(59,130,246,0.35)" : "1px solid transparent",
   background: isPicked ? "rgba(59,130,246,0.10)" : "transparent",
   boxSizing: "border-box",
-  width: "100%",
-  maxWidth: "100%",
-  overflow: "hidden",
+  fontSize: 12,
+  lineHeight: "16px",
+  fontWeight: 850,
+  color: "rgba(15,23,42,0.82)",
 });
 
               return (
@@ -4057,8 +4076,15 @@ const clickableLineStyle = (isPicked, teamName) => ({
                     gap: 8,
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                    <div style={{ fontWeight: 950, fontSize: 12, minWidth: 0 }}>
+                  <div
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 8,
+    alignItems: "flex-start",
+  }}
+>
+                    <div style={{ fontWeight: 950, fontSize: 12, minWidth: 0, flex: 1 }}>
                       {orderVal ? (
                         <>
                           Order #{orderVal} <span style={{ opacity: 0.6 }}>•</span> Game {g?.id}{" "}
@@ -4071,7 +4097,16 @@ const clickableLineStyle = (isPicked, teamName) => ({
                       )}
                     </div>
 
-                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                    <div
+  style={{
+    display: "flex",
+    gap: 6,
+    alignItems: "center",
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
+    flexShrink: 0,
+  }}
+>
   {pickRaw ? <Pill tone="green">Pick: {pickRaw}</Pill> : <Pill>—</Pill>}
 
   {pickRaw && playerViewSelected ? (
@@ -4664,17 +4699,18 @@ pillYellow: {
     color: "#0f172a",
     whiteSpace: "nowrap",
   },
-  pillGreen: {
+pillGreen: {
   display: "inline-flex",
   alignItems: "center",
-  padding: "4px 10px",
+  padding: "3px 8px",
   borderRadius: 999,
-  fontSize: 12,
-  fontWeight: 950,
-  border: "1px solid rgba(16,185,129,0.45)",
-  background: "rgba(16,185,129,0.18)",
-  color: "#22c55e",
+  fontSize: 11,
+  fontWeight: 900,
+  border: "1px solid rgba(16,185,129,0.35)",
+  background: "rgba(16,185,129,0.12)",
+  color: "#16a34a",
   whiteSpace: "nowrap",
+  lineHeight: "14px",
 },
   pillRed: {
     display: "inline-flex",
@@ -4788,15 +4824,15 @@ pillYellow: {
     fontWeight: 950,
     cursor: "pointer",
   },
-  btnGhost: {
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(15,23,42,0.14)",
-    background: "rgba(15,23,42,0.03)",
-    color: "#0f172a",
-    fontWeight: 950,
-    cursor: "pointer",
-  },
+ btnGhost: {
+  padding: "8px 10px",
+  borderRadius: 12,
+  border: "1px solid rgba(15,23,42,0.14)",
+  background: "rgba(15,23,42,0.03)",
+  color: "#0f172a",
+  fontWeight: 900,
+  cursor: "pointer",
+},
 
   helpText: { fontSize: 12, color: "rgba(15,23,42,0.7)", marginTop: 6, lineHeight: "16px", fontWeight: 700 },
   notice: {
