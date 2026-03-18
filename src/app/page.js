@@ -5177,10 +5177,10 @@ lbHeaderMobile: {
 
 lbRowMobile: {
   display: "grid",
-  gridTemplateColumns: "44px 1fr 86px",
-  gap: 10,
+  gridTemplateColumns: "34px minmax(0, 1fr) 108px",
+  gap: 6,
   alignItems: "center",
-  padding: "12px 12px",
+  padding: "10px 10px",
   borderTop: "1px solid rgba(15,23,42,0.06)",
   background: "rgba(255,255,255,0.92)",
 },
@@ -5212,9 +5212,17 @@ lbRowDesktop: {
 
 lbHeaderMobile: {
   display: "grid",
-  gridTemplateColumns: "44px 1fr 86px",
-  gap: 10,
+  gridTemplateColumns: "34px minmax(0, 1fr) 108px",
+  gap: 6,
   alignItems: "center",
+  padding: "10px 10px",
+  fontSize: 11,
+  fontWeight: 950,
+  letterSpacing: 0.6,
+  textTransform: "uppercase",
+  color: "rgba(15,23,42,0.65)",
+  background: "rgba(15,23,42,0.03)",
+  borderBottom: "1px solid rgba(15,23,42,0.08)",
 },
 
 lbSubText: {
