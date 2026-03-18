@@ -3239,7 +3239,8 @@ const statusPill =
 ) : null}
 {Array.isArray(bet.standings) && bet.standings.length ? (
   <div style={{ marginBottom: 12 }}>
-   <div style={styles.standingsHeaderRow}>
+<div style={styles.standingsHeaderRow}>
+  <div>#</div>
   <div>Player</div>
   <div style={{ textAlign: "right" }}>{bet.metricLabel || "Score"}</div>
 </div>
@@ -4410,16 +4411,20 @@ gamesScrollInner: {
   standingsRowAlt: {
   background: "rgba(15,23,42,0.025)",
 },
-  standingsHeaderRow: {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  fontWeight: 900,
+standingsHeaderRow: {
+  display: "grid",
+  gridTemplateColumns: "44px 1fr 80px",
+  gap: 10,
+  padding: "10px 12px",
+  borderRadius: 999,
+  border: "1px solid rgba(15,23,42,0.10)",
+  background: "rgba(15,23,42,0.03)",
   fontSize: 11,
+  fontWeight: 950,
   letterSpacing: 0.8,
   textTransform: "uppercase",
   color: "rgba(15,23,42,0.65)",
-  marginBottom: 8,
+  alignItems: "center",
 },
 
 standingsPanel: {
