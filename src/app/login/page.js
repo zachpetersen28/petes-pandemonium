@@ -205,7 +205,7 @@ heroImg: {
   width: "90%",
   objectFit: "contain",
   objectPosition: "center",
-  transform: "translateY(-75px)", // 👈 move up slightly
+  transform: "translateY(-50px)", // 👈 move up slightly
   filter: "drop-shadow(0 12px 20px rgba(0,0,0,0.6))",
 },
 
