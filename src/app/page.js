@@ -960,8 +960,13 @@ useEffect(() => {
 useEffect(() => {
   let cancelled = false;
 
-  const load = async (silent = false) => {
-    if (!silent) setSharedError("");
+const load = async (silent = false) => {
+  if (!silent) setSharedError("");
+
+  // Prevent background refresh from overwriting fresh local admin edits
+  if (!readOnly && (sharedSaving || saveTimerRef.current)) {
+    return;
+  }
 
     try {
       const res = await fetch("/api/state", {
@@ -1030,7 +1035,7 @@ useEffect(() => {
     clearInterval(intervalId);
     document.removeEventListener("visibilitychange", onVisibilityChange);
   };
-}, []);
+}, [readOnly, sharedSaving]);
 
   /* =========================
      KEEP GAMES CONSISTENT WHEN SEEDS CHANGE
@@ -4026,6 +4031,10 @@ const clickableLineStyle = (isPicked, teamName) => ({
   cursor: teamName && teamName !== "TBD" ? "pointer" : "default",
   border: isPicked ? "1px solid rgba(59,130,246,0.35)" : "1px solid transparent",
   background: isPicked ? "rgba(59,130,246,0.10)" : "transparent",
+  boxSizing: "border-box",
+  width: "100%",
+  maxWidth: "100%",
+  overflow: "hidden",
 });
 
               return (
@@ -4049,7 +4058,7 @@ const clickableLineStyle = (isPicked, teamName) => ({
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                    <div style={{ fontWeight: 950, fontSize: 12 }}>
+                    <div style={{ fontWeight: 950, fontSize: 12, minWidth: 0 }}>
                       {orderVal ? (
                         <>
                           Order #{orderVal} <span style={{ opacity: 0.6 }}>•</span> Game {g?.id}{" "}
@@ -4062,7 +4071,7 @@ const clickableLineStyle = (isPicked, teamName) => ({
                       )}
                     </div>
 
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
   {pickRaw ? <Pill tone="green">Pick: {pickRaw}</Pill> : <Pill>—</Pill>}
 
   {pickRaw && playerViewSelected ? (
@@ -4116,7 +4125,15 @@ onClick={() => {
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                  <div
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 10,
+    alignItems: "flex-start",
+    flexWrap: "wrap",
+  }}
+>
                     <div style={{ fontSize: 11, fontWeight: 900, opacity: 0.72 }}>{g?.slot?.region}</div>
                     <div style={{ fontSize: 11, fontWeight: 900, opacity: 0.65 }}>
                       {pickRaw ? "Picked" : "Pending"}
@@ -4599,7 +4616,6 @@ card: {
 playerPickLine: {
   outline: "2px solid rgba(59,130,246,0.35)",
   borderRadius: 10,
-  padding: "4px 6px",
   background: "rgba(59,130,246,0.10)",
 },
 
