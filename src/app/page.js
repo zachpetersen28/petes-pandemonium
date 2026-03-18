@@ -2640,24 +2640,11 @@ const adminBadge = isAdmin ? (
   <Pill>USER</Pill>
 );
 
-const sharedStatus = (
-  <div
-    style={{
-      minWidth: 88,
-      display: "flex",
-      justifyContent: "center",
-      flexShrink: 0,
-    }}
-  >
-    {sharedSaving ? (
-      <Pill tone="blue">Saving...</Pill>
-    ) : sharedError ? (
-      <Pill tone="red">Sync error</Pill>
-    ) : (
-      <Pill tone="green">Synced</Pill>
-    )}
-  </div>
-);
+const sharedStatus = (() => {
+  if (sharedSaving) return <Pill tone="blue">Saving…</Pill>;
+  if (sharedError) return <Pill tone="red">Sync error</Pill>;
+  return <Pill tone="green">Synced</Pill>;
+})();
 
   return (
     <div style={styles.page}>
@@ -4349,25 +4336,18 @@ topBar: {
   top: 0,
   zIndex: 50,
 },
-topBarInner: {
-  maxWidth: 1180,
-  margin: "0 auto",
-  padding: "12px 16px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 14,
-  flexWrap: "nowrap",
-},
+  topBarInner: {
+    maxWidth: 1180,
+    margin: "0 auto",
+    padding: "12px 16px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 14,
+    flexWrap: "wrap",
+  },
   leftCluster: { display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", minWidth: 0 },
-  rightCluster: {
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-  flexWrap: "nowrap",
-  justifyContent: "flex-end",
-  flexShrink: 0,
-},
+  rightCluster: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" },
 
   brand: { display: "flex", alignItems: "center", gap: 12, minWidth: 0 },
 brandMark: {
