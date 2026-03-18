@@ -28,24 +28,28 @@ const audioRef = useRef(null);
     shakeTimer.current = setTimeout(() => setShake(false), 520);
   };
 useEffect(() => {
-  const unlockAudio = () => {
-    if (audioRef.current) {
-      audioRef.current.volume = 0;
-      audioRef.current.play().catch(() => {});
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
+  const tryPlayIntro = () => {
+    if (!audioRef.current) return;
 
-    document.removeEventListener("click", unlockAudio);
-    document.removeEventListener("touchstart", unlockAudio);
+    audioRef.current.volume = 0.6;
+    audioRef.current.currentTime = 0;
+    audioRef.current.play().catch(() => {});
   };
 
-  document.addEventListener("click", unlockAudio);
-  document.addEventListener("touchstart", unlockAudio);
+  tryPlayIntro();
+
+  const handleFirstTap = () => {
+    tryPlayIntro();
+    document.removeEventListener("click", handleFirstTap);
+    document.removeEventListener("touchstart", handleFirstTap);
+  };
+
+  document.addEventListener("click", handleFirstTap, { once: true });
+  document.addEventListener("touchstart", handleFirstTap, { once: true });
 
   return () => {
-    document.removeEventListener("click", unlockAudio);
-    document.removeEventListener("touchstart", unlockAudio);
+    document.removeEventListener("click", handleFirstTap);
+    document.removeEventListener("touchstart", handleFirstTap);
   };
 }, []);
   const canSubmit = useMemo(() => {
@@ -93,26 +97,16 @@ const onSubmit = async (e) => {
     }
   }
 
-  localStorage.setItem(
-    "mm_user",
-    JSON.stringify({
-      name: n,
-      role: isAdmin ? "admin" : "user",
-      isAdmin,
-    })
-  );
+localStorage.setItem(
+  "mm_user",
+  JSON.stringify({
+    name: n,
+    role: isAdmin ? "admin" : "user",
+    isAdmin,
+  })
+);
 
-  if (audioRef.current) {
-    try {
-      audioRef.current.currentTime = 0;
-      audioRef.current.volume = 0.6;
-      audioRef.current.play().catch(() => {});
-    } catch {}
-  }
-
-  setTimeout(() => {
-    router.replace("/");
-  }, 1200);
+router.replace("/");
 };
   return (
     <div style={styles.page}>
