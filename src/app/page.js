@@ -4076,12 +4076,13 @@ const clickableLineStyle = (isPicked, teamName) => ({
                     gap: 8,
                   }}
                 >
-                  <div
+<div
   style={{
     display: "flex",
     justifyContent: "space-between",
     gap: 8,
-    alignItems: "flex-start",
+    alignItems: "center",
+    minHeight: 32,
   }}
 >
                     <div style={{ fontWeight: 950, fontSize: 12, minWidth: 0, flex: 1 }}>
@@ -4097,17 +4098,19 @@ const clickableLineStyle = (isPicked, teamName) => ({
                       )}
                     </div>
 
-                    <div
+<div
   style={{
     display: "flex",
     gap: 6,
     alignItems: "center",
-    flexWrap: "wrap",
     justifyContent: "flex-end",
     flexShrink: 0,
+    minHeight: 24,
   }}
 >
-  {pickRaw ? <Pill tone="green">Pick: {pickRaw}</Pill> : <Pill>—</Pill>}
+  <div style={{ minWidth: 92, display: "flex", justifyContent: "flex-end" }}>
+  {pickRaw ? <Pill tone="green">Pick: {pickRaw}</Pill> : <Pill>Pick: —</Pill>}
+</div>
 
   {pickRaw && playerViewSelected ? (
     <button
