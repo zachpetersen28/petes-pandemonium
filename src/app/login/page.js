@@ -47,11 +47,17 @@ export default function LoginPage() {
       return;
     }
 
-    if (p !== POOL_PASSCODE) {
-      setErrorMsg("Invalid passcode.");
-      triggerShake();
-      return;
-    }
+const insults = [
+  "Really!? It's not that hard. Try again.",
+  "Spelling is hard, especially for your kind.",
+  "I'd give up if I were you. If you can't sign in, you sure as hell can't win.",
+];
+
+if (p !== POOL_PASSCODE) {
+  setErrorMsg(insults[Math.floor(Math.random() * insults.length)]);
+  triggerShake();
+  return;
+}
 
     let isAdmin = false;
     if (a) {
