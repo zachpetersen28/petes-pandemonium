@@ -36,65 +36,65 @@ const onSubmit = async (e) => {
   e.preventDefault();
   setErrorMsg("");
 
-  // 🔊 PLAY SOUND ON ENTER
-  if (audioRef.current) {
-    audioRef.current.currentTime = 0;
-    audioRef.current.volume = 0.5;
-    audioRef.current.play().catch(() => {});
-  }
-
   const n = String(name || "").trim();
   const p = String(passcode || "").trim();
-    const a = String(adminPasscode || "").trim();
+  const a = String(adminPasscode || "").trim();
 
-    if (!n || !p) {
-      setErrorMsg("Enter your name and passcode.");
-      triggerShake();
-      return;
+  if (!n || !p) {
+    setErrorMsg("Enter your name and passcode.");
+    triggerShake();
+    return;
+  }
+
+  const insults = [
+    "Really!? It's not that hard. Try again.",
+    "Spelling is hard, especially for your kind.",
+    "I'd give up if I were you. If you can't sign in, you sure as hell can't win.",
+  ];
+
+  if (p !== POOL_PASSCODE) {
+    setErrorMsg(insults[Math.floor(Math.random() * insults.length)]);
+    triggerShake();
+    return;
+  }
+
+  let isAdmin = false;
+  if (a) {
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode: a }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) isAdmin = true;
+    } catch {
+      isAdmin = false;
     }
+  }
 
-const insults = [
-  "Really!? It's not that hard. Try again.",
-  "Spelling is hard, especially for your kind.",
-  "I'd give up if I were you. If you can't sign in, you sure as hell can't win.",
-];
+  localStorage.setItem(
+    "mm_user",
+    JSON.stringify({
+      name: n,
+      role: isAdmin ? "admin" : "user",
+      isAdmin,
+    })
+  );
 
-if (p !== POOL_PASSCODE) {
-  setErrorMsg(insults[Math.floor(Math.random() * insults.length)]);
-  triggerShake();
-  return;
-}
+  if (audioRef.current) {
+    try {
+      audioRef.current.currentTime = 0;
+      audioRef.current.volume = 0.5;
+      await audioRef.current.play();
+    } catch {}
+  }
 
-    let isAdmin = false;
-    if (a) {
-      try {
-        const res = await fetch("/api/admin/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ passcode: a }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data?.ok) isAdmin = true;
-      } catch {
-        isAdmin = false;
-      }
-    }
-
-    localStorage.setItem(
-      "mm_user",
-      JSON.stringify({
-        name: n,
-        role: isAdmin ? "admin" : "user",
-        isAdmin,
-      })
-    );
-
-    router.replace("/");
-  };
-
+  router.replace("/");
+};
   return (
     <div style={styles.page}>
-  <audio ref={audioRef} src="/login-music.mp4" preload="auto" />
+  <audio ref={audioRef} src="/login-sound.mp3" preload="auto" />
   <div style={styles.shell}>
         <div style={{ ...styles.card, ...(shake ? styles.cardShake : {}) }}>
           {/* HERO SECTION */}
