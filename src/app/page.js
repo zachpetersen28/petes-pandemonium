@@ -2760,14 +2760,14 @@ const sharedStatus = (() => {
         {isAdmin && (
           <div style={{ marginTop: 16 }}>
             <Card title="Admin Tools" subtitle="Edits here sync to everyone automatically." rightHeader={<Pill tone="green">LIVE</Pill>}>
-              <div style={styles.adminGrid}>
+              <div style={isDesktop ? styles.adminGridDesktop : styles.adminGrid}>
                 <div style={{ gridColumn: "1 / -1" }}>
                   <Card
                     title="Seed → Team Name Mapper"
                     subtitle="Enter team names by region/seed. This updates Round 1 matchups automatically."
                     rightHeader={<Pill tone="green">ADMIN</Pill>}
                   >
-                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", width: "100%" }}>
                       <button onClick={downloadSeedTemplate} style={styles.btnDark}>
                         Download Seed Template
                       </button>
@@ -2805,7 +2805,7 @@ const sharedStatus = (() => {
                       {REGIONS.map((region) => (
                         <div key={region} style={styles.seedRegion}>
                           <div style={styles.seedRegionTitle}>{region}</div>
-                          <div style={styles.seedGrid}>
+                          <div style={isDesktop ? styles.seedGridDesktop : styles.seedGrid}>
                             {Array.from({ length: 16 }).map((_, idx) => {
                               const seed = idx + 1;
                               const val = seedTeamsByRegion?.[region]?.[seed] || "";
@@ -2844,7 +2844,7 @@ const sharedStatus = (() => {
                 <div style={styles.adminPanel}>
                   <div style={styles.fieldLabel}>Results CSV</div>
 
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", width: "100%" }}>
                     <select value={templateDay} onChange={(e) => setTemplateDay(e.target.value)} style={styles.select}>
                       <option value="ALL">All Games</option>
                       {uniqueDays.map((d) => (
@@ -2875,7 +2875,7 @@ const sharedStatus = (() => {
                       Pick the day, then select the winner for each game. This updates the bracket immediately.
                     </div>
 
-                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", width: "100%" }}>
                       <select
                         value={String(manualDay)}
                         onChange={(e) => setManualDay(Number(e.target.value))}
@@ -4818,23 +4818,27 @@ pillGreen: {
     fontWeight: 800,
     cursor: "pointer",
   },
-  btnDark: {
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(15,23,42,0.14)",
-    background: "#0f172a",
-    color: "white",
-    fontWeight: 950,
-    cursor: "pointer",
-  },
- btnGhost: {
-  padding: "8px 10px",
+btnDark: {
+  padding: "10px 12px",
+  borderRadius: 12,
+  border: "1px solid rgba(15,23,42,0.14)",
+  background: "#0f172a",
+  color: "white",
+  fontWeight: 950,
+  cursor: "pointer",
+  maxWidth: "100%",
+  whiteSpace: "normal",
+},
+btnGhost: {
+  padding: "10px 12px",
   borderRadius: 12,
   border: "1px solid rgba(15,23,42,0.14)",
   background: "rgba(15,23,42,0.03)",
   color: "#0f172a",
-  fontWeight: 900,
+  fontWeight: 950,
   cursor: "pointer",
+  maxWidth: "100%",
+  whiteSpace: "normal",
 },
 
   helpText: { fontSize: 12, color: "rgba(15,23,42,0.7)", marginTop: 6, lineHeight: "16px", fontWeight: 700 },
@@ -4847,8 +4851,16 @@ pillGreen: {
     fontWeight: 900,
   },
 
-  adminGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 },
-
+  adminGrid: {
+  display: "grid",
+  gridTemplateColumns: "1fr",
+  gap: 12,
+},
+adminGridDesktop: {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr 1fr",
+  gap: 12,
+},
   adminPanel: {
     background: "rgba(15,23,42,0.02)",
     border: "1px solid rgba(15,23,42,0.08)",
@@ -4864,7 +4876,16 @@ pillGreen: {
     padding: 12,
   },
   seedRegionTitle: { fontWeight: 950, fontSize: 14, marginBottom: 10 },
-  seedGrid: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 },
+  seedGrid: {
+  display: "grid",
+  gridTemplateColumns: "repeat(2, 1fr)",
+  gap: 10,
+},
+seedGridDesktop: {
+  display: "grid",
+  gridTemplateColumns: "repeat(4, 1fr)",
+  gap: 10,
+},
   seedCell: { display: "grid", gridTemplateColumns: "46px 1fr", gap: 8, alignItems: "center" },
   seedLabel: {
     fontWeight: 950,
