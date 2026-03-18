@@ -16,13 +16,12 @@ export default function LoginPage() {
   const [shake, setShake] = useState(false);
 
   const shakeTimer = useRef(null);
-
+const audioRef = useRef(null);
   useEffect(() => {
     return () => {
       if (shakeTimer.current) clearTimeout(shakeTimer.current);
     };
   }, []);
-
   const triggerShake = () => {
     setShake(true);
     if (shakeTimer.current) clearTimeout(shakeTimer.current);
@@ -33,12 +32,19 @@ export default function LoginPage() {
     return Boolean(String(name).trim() && String(passcode).trim());
   }, [name, passcode]);
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    setErrorMsg("");
+const onSubmit = async (e) => {
+  e.preventDefault();
+  setErrorMsg("");
 
-    const n = String(name || "").trim();
-    const p = String(passcode || "").trim();
+  // 🔊 PLAY SOUND ON ENTER
+  if (audioRef.current) {
+    audioRef.current.currentTime = 0;
+    audioRef.current.volume = 0.5;
+    audioRef.current.play().catch(() => {});
+  }
+
+  const n = String(name || "").trim();
+  const p = String(passcode || "").trim();
     const a = String(adminPasscode || "").trim();
 
     if (!n || !p) {
@@ -88,7 +94,8 @@ if (p !== POOL_PASSCODE) {
 
   return (
     <div style={styles.page}>
-      <div style={styles.shell}>
+  <audio ref={audioRef} src="/login-music.mp4" preload="auto" />
+  <div style={styles.shell}>
         <div style={{ ...styles.card, ...(shake ? styles.cardShake : {}) }}>
           {/* HERO SECTION */}
           <div style={styles.heroWrap}>
@@ -211,7 +218,7 @@ heroImg: {
   width: "90%",
   objectFit: "contain",
   objectPosition: "center",
-  transform: "translateY(-30px)", // 👈 move up slightly
+  transform: "translateY(-35px)", // 👈 move up slightly
   filter: "drop-shadow(0 12px 20px rgba(0,0,0,0.6))",
 },
 
