@@ -322,33 +322,31 @@ function buildTournamentGames(seedTeamsByRegion) {
     });
     regionElite8GameId[region] = e8Id;
     id++;
-  }
+  }const f4_1 = id;
+games.push({
+  id,
+  day: 0,
+  round: "Final Four",
+  sources: [regionElite8GameId["East"], regionElite8GameId["South"]],
+  slot: { region: "Final Four", label: "F4-1" },
+  espnGameId: "",
+  teams: [{ name: "TBD", seed: null }, { name: "TBD", seed: null }],
+  winnerName: "",
+});
+id++;
 
-  const f4_1 = id;
-  games.push({
-    id,
-    day: 0,
-    round: "Final Four",
-    sources: [regionElite8GameId["East"], regionElite8GameId["West"]],
-    slot: { region: "Final Four", label: "F4-1" },
-    espnGameId: "",
-    teams: [{ name: "TBD", seed: null }, { name: "TBD", seed: null }],
-    winnerName: "",
-  });
-  id++;
-
-  const f4_2 = id;
-  games.push({
-    id,
-    day: 0,
-    round: "Final Four",
-    sources: [regionElite8GameId["South"], regionElite8GameId["Midwest"]],
-    slot: { region: "Final Four", label: "F4-2" },
-    espnGameId: "",
-    teams: [{ name: "TBD", seed: null }, { name: "TBD", seed: null }],
-    winnerName: "",
-  });
-  id++;
+const f4_2 = id;
+games.push({
+  id,
+  day: 0,
+  round: "Final Four",
+  sources: [regionElite8GameId["West"], regionElite8GameId["Midwest"]],
+  slot: { region: "Final Four", label: "F4-2" },
+  espnGameId: "",
+  teams: [{ name: "TBD", seed: null }, { name: "TBD", seed: null }],
+  winnerName: "",
+});
+id++;
 
   games.push({
     id,
