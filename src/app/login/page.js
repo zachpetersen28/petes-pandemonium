@@ -72,34 +72,47 @@ const onSubmit = async (e) => {
     "I'd give up if I were you. If you can't sign in, you sure as hell can't win.",
   ];
 
-if (p !== POOL_PASSCODE) {
-  setErrorMsg(insults[Math.floor(Math.random() * insults.length)]);
-  triggerShake();
-  return;
-}
-
-if (audioRef.current) {
-  try {
-    audioRef.current.currentTime = 0;
-    audioRef.current.volume = 0.6;
-    audioRef.current.play();
-  } catch (err) {
-    console.log("Audio failed:", err);
+  if (p !== POOL_PASSCODE) {
+    setErrorMsg(insults[Math.floor(Math.random() * insults.length)]);
+    triggerShake();
+    return;
   }
-}
 
-setTimeout(() => {
-  router.replace("/");
-}, 1200);
+  let isAdmin = false;
+  if (a) {
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode: a }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) isAdmin = true;
+    } catch {
+      isAdmin = false;
+    }
+  }
+
+  localStorage.setItem(
+    "mm_user",
+    JSON.stringify({
+      name: n,
+      role: isAdmin ? "admin" : "user",
+      isAdmin,
+    })
+  );
+
   if (audioRef.current) {
     try {
       audioRef.current.currentTime = 0;
-      audioRef.current.volume = 0.5;
-      await audioRef.current.play();
+      audioRef.current.volume = 0.6;
+      audioRef.current.play().catch(() => {});
     } catch {}
   }
 
-  router.replace("/");
+  setTimeout(() => {
+    router.replace("/");
+  }, 1200);
 };
   return (
     <div style={styles.page}>
