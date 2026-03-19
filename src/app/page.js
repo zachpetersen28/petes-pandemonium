@@ -31,7 +31,7 @@ const ESPN_POINTS = {
   Final: 320,
 };
 
-const GRAND_PRIZES = { first: 500, second: 200 };
+const GRAND_PRIZES = { first: 500, second: 0 };
 
 /* =========================
    TOURNAMENT STRUCTURE
@@ -67,21 +67,21 @@ const SIDE_BETS = [
     id: 1,
     title: "Round 1 – Most Upsets Correctly Picked",
     round: "Round 1",
-    prize: 100,
+    prize: 35,
     desc: "Any lower seed that beats a higher seed is an upset. Most correctly picked upsets wins.",
   },
   {
     id: 2,
     title: "Round 2 – Most Wins Correctly Picked",
     round: "Round 2",
-    prize: 50,
+    prize: 35,
     desc: "Most correct picks in Round 2 (wins only).",
   },
   {
     id: 3,
     title: "Sweet Sixteen – Win + Upset Points",
     round: "Sweet Sixteen",
-    prize: 25,
+    prize: 40,
     desc: "Win = 1 point. Upset = 2 points. Most points wins.",
   },
 
@@ -90,13 +90,13 @@ const SIDE_BETS = [
     id: 6,
     title: "Elite Eight – Closest Combined Seed Total (Final Four seeds)",
     round: "Elite 8",
-    prize: 50,
+    prize: 60,
     desc: "Closest predicted final four seed sum wins. Even if all of your team are eliminated, the seed sum goes off of your original predictions.",
   },
   {
     id: 7,
     title: "Final Four – Championship Teams Picked",
-    prize: 100,
+    prize: 70,
     gameIds: [61, 62],
     desc: "Each correctly picked championship team = +1 point. Bonus: +3 if only you picked the team, +2 if 2–3 people picked the team, +1 if 4–6 people picked the team, +0 if 7+ people picked the team. If no one correctly picks either team it is a tie among all.",
   },
@@ -104,7 +104,7 @@ const SIDE_BETS = [
     id: 8,
     title: "Final – Most Wins Overall",
     round: "Final",
-    prize: 150,
+    prize: 80,
     desc: "Most wins throughout the entire tournament, not points.",
   },
 ];
