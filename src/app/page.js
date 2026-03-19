@@ -31,7 +31,7 @@ const ESPN_POINTS = {
   Final: 320,
 };
 
-const GRAND_PRIZES = { first: 500, second: 0 };
+const GRAND_PRIZES = { first: 400, second: 0 };
 
 /* =========================
    TOURNAMENT STRUCTURE
@@ -67,21 +67,21 @@ const SIDE_BETS = [
     id: 1,
     title: "Round 1 – Most Upsets Correctly Picked",
     round: "Round 1",
-    prize: 35,
+    prize: 45,
     desc: "Any lower seed that beats a higher seed is an upset. Most correctly picked upsets wins.",
   },
   {
     id: 2,
     title: "Round 2 – Most Wins Correctly Picked",
     round: "Round 2",
-    prize: 35,
+    prize: 45,
     desc: "Most correct picks in Round 2 (wins only).",
   },
   {
     id: 3,
     title: "Sweet Sixteen – Win + Upset Points",
     round: "Sweet Sixteen",
-    prize: 40,
+    prize: 50,
     desc: "Win = 1 point. Upset = 2 points. Most points wins.",
   },
 
