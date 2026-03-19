@@ -2481,9 +2481,17 @@ function playersWhoPickedWinnerForGame(game, brackets) {
     return list.sort(compareByOrderThenId);
   }, [games, scheduleOrderByGameId]);
 
-  useEffect(() => {
-    if (!selectedGameId && gameListForDropdown.length) setSelectedGameId(String(gameListForDropdown[0].id));
-  }, [selectedGameId, gameListForDropdown]);
+useEffect(() => {
+  if (!gameListForDropdown.length) return;
+
+  const exists = gameListForDropdown.some(
+    (g) => String(g.id) === String(selectedGameId)
+  );
+
+  if (!selectedGameId || !exists) {
+    setSelectedGameId(String(gameListForDropdown[0].id));
+  }
+}, [selectedGameId, gameListForDropdown]);
 
   const selectedGame = useMemo(() => {
     const gid = Number(selectedGameId);
