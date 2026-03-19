@@ -127,13 +127,19 @@ const brackets = (playerRows || []).map((p) => ({
   picks: { ...(picksByPlayerId.get(String(p.id)) || {}) }, // ✅ lookup by UUID string + clone
   tiebreaker: p.tiebreaker_total_points == null ? null : Number(p.tiebreaker_total_points),
 }));
-
-  return {
-    games,
-    brackets,
-    seedTeamsByRegion,
-    finalGameTotalPoints: String(finalGameTotalPoints ?? ""),
-  };
+const scheduleOrderByGameId = {};
+for (const g of games) {
+  if (g.playedOrder != null) {
+    scheduleOrderByGameId[g.id] = g.playedOrder;
+  }
+}
+return {
+  games,
+  brackets,
+  seedTeamsByRegion,
+  finalGameTotalPoints: String(finalGameTotalPoints ?? ""),
+  scheduleOrderByGameId,
+};
 }
 
 async function saveDbStateFromPayload(supabase, payloadState) {
@@ -165,7 +171,10 @@ async function saveDbStateFromPayload(supabase, payloadState) {
       day: Number(g.day),
 
       // ✅ NEW: persist played order
-      played_order: g.playedOrder == null || g.playedOrder === "" ? null : Number(g.playedOrder),
+     played_order:
+  payloadState.scheduleOrderByGameId?.[g.id] != null
+    ? Number(payloadState.scheduleOrderByGameId[g.id])
+    : null,
 
       round: String(g.round || ""),
       region: String(g?.slot?.region || ""),
