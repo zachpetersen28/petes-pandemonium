@@ -3759,10 +3759,10 @@ const statusPill =
               style={styles.select}
             >
               {gameListForDropdown.map((g) => (
-                <option key={g.id} value={String(g.id)}>
-                  {`Game ${g.id} • ${g.round} • ${g.slot?.region ?? "—"}`}
-                </option>
-              ))}
+  <option key={g.id} value={String(g.id)}>
+    {matchupLabel(g)}
+  </option>
+))}
             </select>
 
             {selectedGame ? (
