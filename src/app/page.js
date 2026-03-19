@@ -3744,7 +3744,91 @@ const statusPill =
         </div>
       </div>
     )}
+    {/* VIEWER: By Game */}
+    {bracketViewMode === "game" && (
+      <div style={{ marginTop: 14 }}>
+        <Card
+          title="By Game"
+          subtitle="Pick a game to see the matchup and what every player picked."
+          rightHeader={<Pill tone="blue">LIVE</Pill>}
+        >
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <select
+              value={selectedGameId}
+              onChange={(e) => setSelectedGameId(e.target.value)}
+              style={styles.select}
+            >
+              {gameListForDropdown.map((g) => (
+                <option key={g.id} value={String(g.id)}>
+                  {`Game ${g.id} • ${g.round} • ${g.slot?.region ?? "—"}`}
+                </option>
+              ))}
+            </select>
 
+            {selectedGame ? (
+              selectedGame.winnerName ? (
+                <Pill tone="green">Winner: {selectedGame.winnerName}</Pill>
+              ) : (
+                <Pill>Pending</Pill>
+              )
+            ) : null}
+          </div>
+
+          {selectedGame ? (
+            <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+              <div style={styles.bracketGameHeader}>
+                <div>
+                  <div style={styles.bracketGameTitle}>
+                    Game {selectedGame.id} <span style={{ opacity: 0.75 }}>• {selectedGame.round}</span>
+                  </div>
+                  <div style={styles.bracketGameMatchup}>{matchupLabel(selectedGame)}</div>
+                </div>
+
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <Pill tone="blue">{selectedGame.slot?.region || "—"}</Pill>
+                </div>
+              </div>
+
+              <div style={styles.pickTableHeader}>
+                <div>Player</div>
+                <div>Pick</div>
+                <div style={{ textAlign: "right" }}>Status</div>
+              </div>
+
+              <div style={{ display: "grid", gap: 8 }}>
+                {brackets
+                  .slice()
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((player) => {
+                    const pickRaw = String(player.picks?.[selectedGame.id] ?? "").trim();
+                    const tone = pickRowTone(player, selectedGame);
+
+                    return (
+                      <div key={player.name} style={styles.pickRow}>
+                        <div style={styles.pickColName}>
+                          <div style={{ fontWeight: 950 }}>{player.name}</div>
+                        </div>
+
+                        <div style={styles.pickColPick}>
+                          <div style={{ fontWeight: 800, color: "rgba(15,23,42,0.82)" }}>
+                            {pickRaw || "—"}
+                          </div>
+                        </div>
+
+                        <div style={styles.pickColStatus}>
+                          <Pill tone={tone.tone}>{tone.label}</Pill>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          ) : (
+            <div style={{ marginTop: 12, ...styles.notice }}>Select a game.</div>
+          )}
+        </Card>
+      </div>
+    )}
     {/* VIEWER: By Player */}
 {bracketViewMode === "player" && (
   <div style={{ marginTop: 14 }}>
